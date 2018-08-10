@@ -1,0 +1,20 @@
+{
+    "extends": ["axway/env-node"],
+    "globals": {
+      "beforeEach",
+      "afterEach",
+      "describe",
+      "before",
+      "after",
+      "it"
+    },
+    "rules": {
+      "no-unused-vars":["error", { "varsIgnorePattern": "MochaFilter|webdriver"}],
+      "security/detect-non-literal-regexp":"off",
+      "security/detect-child-process":"off",
+      "security/detect-new-buffer":"off",
+      "spaced-comment":"off",
+      "valid-jsdoc":"off",
+      "max-len":"off"
+    }
+}
