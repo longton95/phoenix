@@ -8,7 +8,12 @@ Zephyr stuff won't work yet either, need to make it point to the correct locatio
 
 ...Also, just don't attempt to run this for Windows (yet), I have **no** idea what will happen, might just error out, might wreck your system...
 
-To run on MacOS, just do the following:
+## Setup to Run on MacOS
+
+* Download an Appium for Mac release from [here](https://github.com/appium/appium-for-mac/releases) I'm currently using beta 3
+* Unzip the download, and place it in your `/Applications` directory
+
+## Running On MacOS
 * `npm i`
 * `npm run test -- -p Mac`
 
