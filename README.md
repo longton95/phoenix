@@ -18,3 +18,6 @@ Zephyr stuff won't work yet either, need to make it point to the correct locatio
 * `npm run test -- -p Mac`
 
 You may also be prompted to allow certain programs accessibility access in System Preferences, this will only be required once.
+
+## Discussion Points
+* Do we assume a default location for the Studio workspace?
