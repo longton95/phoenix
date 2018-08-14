@@ -7,14 +7,12 @@ const
 	Output = require('../Helpers/Output_Helper.js'),
 	Appium = require('../Helpers/Appium_Helper.js'),
 	// Zephyr = require('../Helpers/Zephyr_Helper.js'), // TODO: Add this functionality back in later
-	projects = require('../Config/Device_Config.js'),
 	WebDriver = require('../Helpers/WebDriver_Helper.js');
 
 program
 	.option('-p, --platforms <platform1,platform2>', 'List the platforms that you want to run the suite for. Defaults to \'iOS\' and \'Android\'.', 'iOS,Android')
 	.option('-l, --logging <level>', 'Set the amount of Output returned by the process, options are \'debug\' and \'basic\'. Defaults to \'basic\'.', 'basic')
 	.option('-A, --address <ip>', 'The IP address for where the Appium server is. Defaults to localhost', 'localhost')
-	.option('-t, --tests <test1,test2>', 'Tests that will be run during the execution. Defaults to \'all\'', 'all')
 	.option('-P, --port <port>', 'The port that the Appium server will run on. Defaults to 4723', 4723)
 	.option('-u, --update', 'Publish the results to the Zephyr tests on JIRA.')
 	.option('-f, --force', 'Force rebuild applications.')
@@ -67,25 +65,10 @@ program.platforms.split(',').forEach(platform => {
 	}
 });
 
-// Validate that the tests passed are valid
-let tests = program.tests.split(',');
-
-// When specifying generic all, replace the value with all tests from device config
-if (tests.toString() === 'all') {
-	tests = Object.keys(projects);
-}
-
-tests.forEach(test => {
-	if (!Object.keys(projects).includes(test) && test !== 'all') {
-		Output.error(`'${test}' is not a valid test. Valid tests are contained within the device config file`);
-		process.exit();
-	}
-});
-
 let appiumPid; // A placeholder for storing the process ID for Appium
 
 // The promise chain for setting up suite services
-let startup = Promise.resolve()
+Promise.resolve()
 	// Log that the suite is starting up
 	.then(() => Output.banner('Starting and Configuring Suite Services'))
 	// Start an Appium server
@@ -104,19 +87,12 @@ let startup = Promise.resolve()
 		// Shutdown the Appium server, as process.exit() will leave it running
 		return appium.quitServ(appiumPid)
 			.then(() => process.exit());
-	});
-
-// Iterate through each application outlined in the config file
-tests.forEach(test => {
-	startup = startup
-		// Output when beginning suite for a new application
-		.then(() => Output.banner(`Beginning suite for '${test.replace(/_/g, ' ')}'`))
-		// Launch the platform specific build and test
-		.then(() => platformRun(test))
-		.catch(err => Output.error(err));
-});
-
-startup
+	})
+	// Output when beginning suite for a new application
+	.then(() => Output.banner('Beginning suite for Appcelerator Studio'))
+	// Launch the platform specific build and test
+	.then(() => platformRun())
+	.catch(err => Output.error(err))
 	// Notify that the suite is finished
 	.then(() => Output.banner('All Tests Run, Closing Down Services'))
 	// Kill the Appium server
@@ -128,17 +104,12 @@ startup
  * platform, builds the app and launches it into its respective
  * emulator/simulator for the mocha test to run against. Then once the tests
  * have run tears itself down again.
- *
- * @param {String} test - The module being tested
  ******************************************************************************/
-function platformRun(test) {
+function platformRun() {
 	return new Promise(resolve => {
-		let
-			p = Promise.resolve(),
-			config = projects[test],
-			testPlatforms = Object.keys(config);
+		let	p = Promise.resolve();
 
-		testPlatforms.forEach(platform => {
+		suppPlatforms.forEach(platform => {
 			if (!Object.keys(platforms).includes(platform)) {
 				return;
 			}
@@ -149,9 +120,9 @@ function platformRun(test) {
 				// Display information for the test that is about to be conducted
 				.then(() => Output.banner(`Running For Platform '${platform}'`))
 				// Start the client using the specified config
-				.then(() => appium.startClient(platform, config[platform], test))
+				.then(() => appium.startClient(platform))
 				// Run the Mocha test suite with the specified test file
-				.then(() => Mocha.mochaTest(test, platform))
+				.then(() => Mocha.mochaTest(platform))
 				// Collect the test results
 				.then(value => tests = value)
 				// If fail is thrown then the next app starts to run, we don't want that if we're still waiting on more platforms
@@ -159,9 +130,9 @@ function platformRun(test) {
 				// Alert that the test stage has finished
 				.then(() => Output.banner('Tests Run, Stopping Temporary Services'))
 				// Stop the test client
-				.then(() => appium.stopClient(test))
+				.then(() => appium.stopClient())
 				// Use the list of test states to update the test cycle
-				.then(() => Mocha.pushResults(tests, platforms[platform].cycleId, test, platform))
+				// .then(() => Mocha.pushResults(tests, platforms[platform].cycleId, test, platform)) // TODO: Add this functionality back in later
 				// If fail is thrown then the next app starts to run, we don't want that if we're still waiting on more platforms
 				.catch(error => Output.error(error));
 		});

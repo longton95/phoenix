@@ -4,7 +4,8 @@ const
 	path = require('path'),
 	spawn = require('child_process').spawn,
 	Output = require('./Output_Helper.js'),
-	exec = require('child_process').execSync;
+	exec = require('child_process').execSync,
+	version = require('../Config/Device_Config.js').version;
 
 class Appium_Helper {
 	/*****************************************************************************
@@ -38,17 +39,17 @@ class Appium_Helper {
 	 * @param {String} platform - The platform that is about to be launched
 	 * @param {Object} cap - The desired capabilities tht will be passed to Appium
 	 ****************************************************************************/
-	startClient(platform, version, app) {
+	startClient(platform) {
 		return new Promise((resolve, reject) => {
 			Output.info('Starting WebDriver Instance... ');
 
 			global.platform = platform;
 
 			const cap = {
-				app: app,
+				app: 'AppceleratorStudio',
 				deviceName: platform,
 				platformName: platform,
-				platformVersion: version,
+				platformVersion: version[platform],
 				newCommandTimeout: (60 * 10) // Sets the amount of time Appium waits before shutting down in the background
 			};
 
@@ -64,14 +65,14 @@ class Appium_Helper {
 	 *
 	 * @param {String} appId - The ID of the application to be removed
 	 ****************************************************************************/
-	stopClient(app) {
+	stopClient() {
 		return new Promise((resolve, reject) => {
 			Output.info('Stopping WebDriver Instance... ');
 
 			const driver = this.driver;
 
 			Promise.resolve()
-				.then(() => exec(`killall -9 ${app}`))
+				.then(() => exec('killall -9 AppceleratorStudio'))
 				// .then(() => driver.closeApp())// .catch(err => Output.error(err))
 				.then(() => driver.quit())
 				.catch(err => reject(err))

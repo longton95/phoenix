@@ -6,8 +6,7 @@ const
 	path = require('path'),
 	fs = require('fs-extra'),
 	spawn = require('child_process').spawn,
-	Output = require('../Helpers/Output_Helper.js'),
-	projects = require('../Config/Device_Config.js');
+	Output = require('../Helpers/Output_Helper.js');
 
 let
 	startSize,
@@ -84,10 +83,6 @@ function generatePaths() {
 
 		paths.push(path.join(projRoot, 'Logs'));
 		paths.push(path.join(projRoot, 'Reports'));
-
-		Object.keys(projects).forEach(project => {
-			paths.push(path.join(projRoot, 'Modules', project, 'App', 'temporaryApp'));
-		});
 
 		resolve(paths);
 	});

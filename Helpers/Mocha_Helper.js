@@ -11,10 +11,9 @@ class Mocha_Helper {
 	/*****************************************************************************
 	 * Runs through the Mocha tests outlined in device_config.js
 	 *
-	 * @param {String} moduleName - The module being tested
 	 * @param {String} platform - The OS being run on
 	 ****************************************************************************/
-	static mochaTest(moduleName, platform) {
+	static mochaTest(platform) {
 		return new Promise((resolve, reject) => {
 
 			Output.info('Starting Tests\n');
@@ -32,15 +31,15 @@ class Mocha_Helper {
 				slow: 40000,
 				reporter: 'mocha-jenkins-reporter',
 				reporterOptions: {
-					junit_report_name: `${platform}: ${moduleName.replace(/_/g, ' ')}`,
-					junit_report_path: path.join(global.projRoot, 'Reports', `${moduleName}_${platform}.xml`),
+					junit_report_name: `${platform}: Appcelerator Studio`,
+					junit_report_path: path.join(global.projRoot, 'Reports', `${platform}_Appcelerator_Studio.xml`),
 					junit_report_stack: 1
 				}
 			});
 
 			let tests = [];
 
-			getTests(moduleName)
+			getTests()
 				.then(files => {
 					// Break here if no tests are defined
 					if (files.length === 0) {
@@ -58,7 +57,7 @@ class Mocha_Helper {
 								// Attempt to pull the name of the ticket using the file path of the test
 								let
 									test,
-									ticket = 'Calc';
+									ticket = data.title;
 
 								if (data.title === 'Not For Platform') {
 									// If the test is marked as 'Not For Platform'
@@ -196,7 +195,7 @@ class Mocha_Helper {
  *
  * @param {String} moduleName - The module being tested
  ******************************************************************************/
-function getTests(moduleName) {
+function getTests() {
 	return new Promise((resolve, reject) => {
 		// Our container for all the test files to be run
 		let
@@ -204,14 +203,17 @@ function getTests(moduleName) {
 			tests = [];
 
 		// Create a file path
-		dir = path.join(global.projRoot, 'Modules', moduleName, 'Tests');
+		dir = path.join(global.projRoot, 'Tests');
 
 		try {
 			// Iterate through each file within the test directory
 			fs.readdirSync(dir).forEach(file => {
-				let filePath = path.join(dir, file);
+				// Only use actual test files, ignore everything else
+				if (file.match(/.+\.test\.js/g)) {
+					let filePath = path.join(dir, file);
 
-				tests.push(filePath);
+					tests.push(filePath);
+				}
 			});
 		} catch (err) {
 			reject(err);
