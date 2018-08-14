@@ -1,10 +1,16 @@
 'use strict';
 
 const
+	fs = require('fs'),
+	path = require('path'),
 	driver = global.driver,
 	webdriver = global.webdriver,
 	ticket = __filename.split('/').pop().split('.')[0],
 	MochaFilter = require('mocha-filter')(global.filters);
+
+const
+	appName = 'AppiumTest',
+	packageName = 'com.appium.appiumtest';
 
 describe(ticket, () => {
 	before(() => {
@@ -13,6 +19,15 @@ describe(ticket, () => {
 			.elementByXPath('/AXApplication/AXWindow[0]/AXComboBox')
 			.getAttribute('AXValue')
 			.then(workspacePath => {
+
+				const appLocation = path.join(workspacePath, appName);
+
+				if (fs.existsSync(appLocation)) {
+					fs.unlinkSync(appLocation);
+				}
+
+				fs.existsSync(appLocation).should.equal(false);
+
 				return driver
 					.elementByXPath('/AXApplication/AXWindow[0]/AXButton[@AXTitle=\'OK\']')
 					.click()
@@ -47,10 +62,10 @@ describe(ticket, () => {
 	it('Fill Out App Details', () => {
 		return driver
 			.elementByXPath('/AXApplication/AXWindow[@AXTitle=\'New Mobile App Project\' and @AXSubrole=\'AXStandardWindow\']/AXTextField[1]')
-			.sendKeys('AppiumTest')
+			.sendKeys(appName)
 			.sleep(1000)
 			.elementByXPath('/AXApplication/AXWindow[@AXTitle=\'New Mobile App Project\' and @AXSubrole=\'AXStandardWindow\']/AXGroup[1]/AXTextField[1]')
-			.sendKeys('com.appium.AppiumTest')
+			.sendKeys(packageName)
 			.sleep(1000)
 			.elementByXPath('/AXApplication/AXWindow[@AXTitle=\'New Mobile App Project\' and @AXSubrole=\'AXStandardWindow\']/AXButton[@AXTitle=\'Finish\']')
 			.click()
