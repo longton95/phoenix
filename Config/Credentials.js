@@ -7,3 +7,9 @@ exports.jira = {
 	username: process.env.JIRAUSER,
 	password: process.env.JIRAPASS
 };
+
+exports.appc = {
+	org: 'qe_test_org_prod_team',
+	username: process.env.APPCUSER,
+	password: process.env.APPCPASS
+};

@@ -1,16 +1,22 @@
 'use strict';
 
 const
-	fs = require('fs'),
 	path = require('path'),
-	driver = global.driver,
-	webdriver = global.webdriver,
-	ticket = __filename.split('/').pop().split('.')[0],
+	fs = require('fs-extra'),
+	appc = require('../Config/Credentials.js').appc,
 	MochaFilter = require('mocha-filter')(global.filters);
 
 const
+	driver = global.driver,
+	webdriver = global.webdriver,
+	ticket = __filename.split('/').pop().split('.')[0];
+
+// TODO: Assign these to project variables
+const
 	appName = 'AppiumTest',
 	packageName = 'com.appium.appiumtest';
+
+let appLocation;
 
 describe(ticket, () => {
 	before(() => {
@@ -20,10 +26,11 @@ describe(ticket, () => {
 			.getAttribute('AXValue')
 			.then(workspacePath => {
 
-				const appLocation = path.join(workspacePath, appName);
+				appLocation = path.join(workspacePath, appName);
 
 				if (fs.existsSync(appLocation)) {
-					fs.unlinkSync(appLocation);
+					// This deletes the project, but Studio still retains it. Need to delete the project from within Studio to run again with the same project name
+					fs.removeSync(appLocation);
 				}
 
 				fs.existsSync(appLocation).should.equal(false);
@@ -50,17 +57,15 @@ describe(ticket, () => {
 			.isDisplayed().should.become(true);
 	});
 
-	it('Select Option in the First Window', () => {
+	it('Fill Out App Details', function () {
+		this.slow(120000);
+		this.timeout(120000);
+
 		return driver
 			.elementByXPath('/AXApplication/AXWindow[@AXTitle=\'New Mobile App Project\' and @AXSubrole=\'AXStandardWindow\']/AXScrollArea[1]/AXStaticText[@AXValue=\'Default Alloy Project\']')
 			.click()
 			.elementByXPath('/AXApplication/AXWindow[@AXTitle=\'New Mobile App Project\' and @AXSubrole=\'AXStandardWindow\']/AXButton[@AXTitle=\'&Next  \']')
 			.click()
-			.elementByXPath('/AXApplication/AXWindow[@AXTitle=\'New Mobile App Project\' and @AXSubrole=\'AXStandardWindow\']/AXTextField[1]');
-	});
-
-	it('Fill Out App Details', () => {
-		return driver
 			.elementByXPath('/AXApplication/AXWindow[@AXTitle=\'New Mobile App Project\' and @AXSubrole=\'AXStandardWindow\']/AXTextField[1]')
 			.sendKeys(appName)
 			.sleep(1000)
@@ -69,10 +74,22 @@ describe(ticket, () => {
 			.sleep(1000)
 			.elementByXPath('/AXApplication/AXWindow[@AXTitle=\'New Mobile App Project\' and @AXSubrole=\'AXStandardWindow\']/AXButton[@AXTitle=\'Finish\']')
 			.click()
-			.sleep(12000)
+			.sleep(15000)
 			.elementByXPath('/AXApplication/AXWindow[@AXTitle=\'Information\' and @AXSubrole=\'AXStandardWindow\']/AXButton[@AXTitle=\'Yes\']')
 			.click()
-			.sleep(10000);
-		// Gets as far as asking for password authentication right now
+			.sleep(1000)
+			.elementByXPath('/AXApplication/AXWindow[@AXTitle=\'Information\' and @AXSubrole=\'AXStandardWindow\']/AXTextField[@AXSubrole=\'AXSecureTextField\']')
+			.sendKeys(appc.password)
+			.elementByXPath('/AXApplication/AXWindow[@AXTitle=\'Information\' and @AXSubrole=\'AXStandardWindow\']/AXButton[@AXTitle=\'OK\']')
+			.click()
+			.sleep(15000)
+			.elementByXPath('/AXApplication/AXWindow[@AXTitle=\'Information\' and @AXSubrole=\'AXStandardWindow\']/AXButton[@AXTitle=\'Yes\']')
+			.click()
+			.sleep(30000)
+			.then(() => {
+				// Can't currently assert by UI, as the Scroll View for projects isn't visible to WD
+				fs.existsSync(appLocation).should.equal(true);
+				// Could probably also check some logs to check on the project generation
+			});
 	});
 });

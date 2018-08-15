@@ -1,6 +1,6 @@
 'use strict';
 
-const	Output = require('./Output_Helper.js');
+const Output = require('./Output_Helper.js');
 
 class WebDriver_Helper {
 	/*****************************************************************************
@@ -29,7 +29,7 @@ class WebDriver_Helper {
 				switch (global.platform) {
 					case 'Mac':
 						return this.getAttribute('AXTitle');
-						
+
 					case 'Windows':
 						return this.getAttribute('AXTitle'); // Maybe the same? Probably not though, is it ever that easy
 				}

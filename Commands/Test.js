@@ -107,7 +107,7 @@ Promise.resolve()
  ******************************************************************************/
 function platformRun() {
 	return new Promise(resolve => {
-		let	p = Promise.resolve();
+		let p = Promise.resolve();
 
 		suppPlatforms.forEach(platform => {
 			if (!Object.keys(platforms).includes(platform)) {
