@@ -11,9 +11,7 @@ class WebDriver_Helper {
 		return new Promise(resolve => {
 			Output.info('Loading Custom WebDriver Commands... ');
 
-			const
-				driver = global.driver,
-				webdriver = global.webdriver;
+			const webdriver = global.webdriver;
 
 			/*************************************************************************
 			 * Return the OS of the current device.

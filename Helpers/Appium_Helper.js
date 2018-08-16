@@ -37,7 +37,6 @@ class Appium_Helper {
 	 * as Appium configuration
 	 *
 	 * @param {String} platform - The platform that is about to be launched
-	 * @param {Object} cap - The desired capabilities tht will be passed to Appium
 	 ****************************************************************************/
 	startClient(platform) {
 		return new Promise((resolve, reject) => {
@@ -62,8 +61,6 @@ class Appium_Helper {
 	/*****************************************************************************
 	 * Stops the WD session, but first it closes and removes the app from the
 	 * device, to attempt to save storage space
-	 *
-	 * @param {String} appId - The ID of the application to be removed
 	 ****************************************************************************/
 	stopClient() {
 		return new Promise((resolve, reject) => {

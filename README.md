@@ -1,23 +1,52 @@
 # Phoenix
 
+## About This Project
+
 An _exciting_ new project aimed at the automation of the Appcelerator smoke tests. This will use Appium in a similar fashion to the automated Regression test suite; [Yeti](https://github.com/appcelerator/yeti). Check back soon for more!
 
-FYI, there's probably a fair few bugs, as the code is largely replicated from Yeti, and just tweaked to work with Desktop applications, submit issues to help me squash bugs faster :D
+FYI, there's probably a fair few bugs, as the code is largely replicated from Yeti, and just tweaked to work with Desktop applications, submit [issues](https://github.com/appcelerator/phoenix/issues) to help me squash bugs faster :D
 
-Zephyr stuff won't work yet either, need to make it point to the correct location for smokes, so preferably don't try and push to JIRA for now
+## Roadmap
 
-...Also, just don't attempt to run this for Windows (yet), I have **no** idea what will happen, might just error out, might wreck your system...
+- [ ] Get Studio interactions for MacOS working
+- [ ] Create method of simultaneously testing a desktop app and a mobile app
+- [ ] Re-integrate Zephyr API usage to push results to JIRA
+- [ ] Add Windows support
 
-## Setup to Run on MacOS
+## Discussion Points
+
+* Do we assume a default location for the Studio workspace?
+* Do we assume that the user is already logged in?
+
+## Running on MacOS
+
+### Setup Steps
+
+#### Install Appium for Mac
 
 * Download an Appium for Mac release from [here](https://github.com/appium/appium-for-mac/releases) I'm currently using beta 3
 * Unzip the download, and place it in your `/Applications` directory
 
-## Running On MacOS
-* `npm i`
-* `npm run test -- -p Mac`
+#### Install Appcelerator Studio
+
+* Can be downloaded from the [Axway Dashboard](https://platform.axway.com)
+
+#### Install npm Packages
+
+* From the project root, run `npm i`
+
+### Running
+
+* App creation in Studio requires some platform credentials, export these as so from the CLI:
+```
+export APPCUSER=<Dashboard Username>
+export APPCPASS=<Dashboard Password>
+```
+
+* Run the suite with `npm run test -- -p Mac`
 
 You may also be prompted to allow certain programs accessibility access in System Preferences, this will only be required once.
 
-## Discussion Points
-* Do we assume a default location for the Studio workspace?
+## Running on Windows
+
+🚧 Coming soon 🚧

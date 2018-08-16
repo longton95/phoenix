@@ -192,8 +192,6 @@ class Mocha_Helper {
 
 /*******************************************************************************
  * Collect all test files for the desired platform and test application
- *
- * @param {String} moduleName - The module being tested
  ******************************************************************************/
 function getTests() {
 	return new Promise((resolve, reject) => {
