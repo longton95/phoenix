@@ -7,8 +7,7 @@ const
 	MochaFilter = require('mocha-filter')(global.filters);
 
 const
-	driver = global.driver,
-	webdriver = global.webdriver,
+	driver = global.studioDriver,
 	ticket = __filename.split('/').pop().split('.')[1];
 
 // TODO: Assign these to project variables
@@ -74,7 +73,7 @@ describe(ticket, () => {
 			.sleep(1000)
 			.elementByXPath('/AXApplication/AXWindow[@AXTitle=\'New Mobile App Project\' and @AXSubrole=\'AXStandardWindow\']/AXButton[@AXTitle=\'Finish\']')
 			.click()
-			.sleep(15000)
+			.sleep(20000)
 			.elementByXPath('/AXApplication/AXWindow[@AXTitle=\'Information\' and @AXSubrole=\'AXStandardWindow\']/AXButton[@AXTitle=\'Yes\']')
 			.click()
 			.sleep(1000)
@@ -82,7 +81,7 @@ describe(ticket, () => {
 			.sendKeys(appc.password)
 			.elementByXPath('/AXApplication/AXWindow[@AXTitle=\'Information\' and @AXSubrole=\'AXStandardWindow\']/AXButton[@AXTitle=\'OK\']')
 			.click()
-			.sleep(15000)
+			.sleep(20000)
 			.elementByXPath('/AXApplication/AXWindow[@AXTitle=\'Information\' and @AXSubrole=\'AXStandardWindow\']/AXButton[@AXTitle=\'Yes\']')
 			.click()
 			.sleep(30000)

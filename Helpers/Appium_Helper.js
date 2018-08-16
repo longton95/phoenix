@@ -1,35 +1,16 @@
 'use strict';
 
 const
+	os = require('os'),
+	wd = require('wd'),
+	chai = require('chai'),
 	path = require('path'),
 	spawn = require('child_process').spawn,
 	Output = require('./Output_Helper.js'),
-	exec = require('child_process').execSync;
+	exec = require('child_process').execSync,
+	chaiAsPromised = require('chai-as-promised');
 
 class Appium_Helper {
-	/*****************************************************************************
-	 * Creates the Appium object, and initialises the webdriver requirements
-	 * needed for the running of the tests.
-	 *
-	 * @param {Object} config - The properties of the Appium server
-	 ****************************************************************************/
-	constructor(config) {
-		this.wd = require('wd');
-		this.chai = require('chai');
-		this.chaiAsPromised = require('chai-as-promised');
-
-		// enabling chai assertion style: https://www.npmjs.com/package/chai-as-promised#node
-		this.chai.use(this.chaiAsPromised);
-		this.chai.should();
-		// enables chai assertion chaining
-		this.chaiAsPromised.transferPromiseness = this.wd.transferPromiseness;
-
-		this.driver = this.wd.promiseChainRemote(config);
-
-		// These will be accessed in the Appium mocha tests
-		global.driver = this.driver;
-		global.webdriver = this.wd;
-	}
 
 	/*****************************************************************************
 	 * Starts a WD session on the device, using the given capability requirements
@@ -37,33 +18,23 @@ class Appium_Helper {
 	 *
 	 * @param {String} platform - The platform that is about to be launched
 	 ****************************************************************************/
-	startClient(platform) {
+	static startClient(cap) {
 		return new Promise((resolve, reject) => {
 			Output.info('Starting WebDriver Instance... ');
+			// enabling chai assertion style: https://www.npmjs.com/package/chai-as-promised#node
+			chai.use(chaiAsPromised);
+			chai.should();
+			// enables chai assertion chaining
+			chaiAsPromised.transferPromiseness = wd.transferPromiseness;
 
-			global.platform = platform;
+			let driver = wd.promiseChainRemote(global.server);
 
-			let version;
+			global.platform = cap.platformName; // TODO: Replace this global, as it's overwritten by each new session
 
-			if (platform === 'Mac') {
-				version = exec('sw_vers');
-				version = version.toString('utf8');
-				version = version.match(/\d+\.\d+\.\d+/)[0];
-			} else if (platform === 'Windows') {
-				// TODO: Add in a method of finding Windows platform version
-				version = '10'; // Just a guess for now
-			}
+			cap.newCommandTimeout = (60 * 10); // Sets the amount of time Appium waits before shutting down in the background
 
-			const cap = {
-				app: 'AppceleratorStudio',
-				deviceName: platform,
-				platformName: platform,
-				platformVersion: version,
-				newCommandTimeout: (60 * 10) // Sets the amount of time Appium waits before shutting down in the background
-			};
-
-			this.driver.init(cap, err => {
-				(err) ? reject(err) : Output.finish(resolve, null);
+			driver.init(cap, err => {
+				(err) ? reject(err) : Output.finish(resolve, driver);
 			});
 		});
 	}
@@ -72,15 +43,11 @@ class Appium_Helper {
 	 * Stops the WD session, but first it closes and removes the app from the
 	 * device, to attempt to save storage space
 	 ****************************************************************************/
-	stopClient() {
+	static stopClient(driver) {
 		return new Promise((resolve, reject) => {
 			Output.info('Stopping WebDriver Instance... ');
 
-			const driver = this.driver;
-
 			Promise.resolve()
-				.then(() => exec('killall -9 AppceleratorStudio'))
-				// .then(() => driver.closeApp())// .catch(err => Output.error(err))
 				.then(() => driver.quit())
 				.catch(err => reject(err))
 				.then(() => Output.finish(resolve, null));
@@ -89,11 +56,11 @@ class Appium_Helper {
 
 	/*****************************************************************************
 	 * Starts a local Appium server running as a child process
-	 *
-	 * @param {Object} server - the server property from server_config.js
 	 ****************************************************************************/
-	runAppium(server) {
+	static runAppium() {
 		return new Promise((resolve, reject) => {
+			const server = global.server;
+
 			Output.info(`Starting Appium Server On '${server.host}:${server.port}'... `);
 			// We only want to allow starting a server on the local machine
 			const validAddresses = [ 'localhost', '0.0.0.0', '127.0.0.1' ];
@@ -134,7 +101,7 @@ class Appium_Helper {
 	 *
 	 * @param {String} appiumPid - The process ID of the Appium server
 	 ****************************************************************************/
-	quitServ(appiumPid) {
+	static quitServ(appiumPid) {
 		return new Promise(resolve => {
 			Output.info('Stopping Appium Server... ');
 
@@ -146,6 +113,23 @@ class Appium_Helper {
 
 			Output.finish(resolve);
 		});
+	}
+
+	static getVersion() {
+		let
+			version,
+			platform = os.platform();
+
+		if (platform === 'darwin') {
+			version = exec('sw_vers');
+			version = version.toString('utf8');
+			version = version.match(/\d+\.\d+\.\d+/)[0];
+		} else if (platform === 'windows') {
+			// TODO: Add in a method of finding Windows platform version
+			version = '10'; // Just a guess for now
+		}
+
+		return version;
 	}
 }
 

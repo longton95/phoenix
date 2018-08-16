@@ -3,6 +3,7 @@
 const
 	path = require('path'),
 	program = require('commander'),
+	exec = require('child_process').execSync,
 	Mocha = require('../Helpers/Mocha_Helper.js'),
 	Output = require('../Helpers/Output_Helper.js'),
 	Appium = require('../Helpers/Appium_Helper.js'),
@@ -26,6 +27,11 @@ global.platform = undefined;
 global.logging = program.logging;
 // The root of the project
 global.projRoot = path.join(__dirname, '..');
+// Get the Appium settings from the input flags
+global.server = {
+	host: program.address,
+	port: program.port
+};
 
 // Setup the logging directory for this run
 Output.setupLogDir(err => {
@@ -40,14 +46,6 @@ Output.setupLogDir(err => {
 process.on('SIGINT', () => {
 	process.exit();
 });
-
-// Get the Appium settings from the input flags
-const server = {
-	host: program.address,
-	port: program.port
-};
-
-const appium = new Appium(server);
 
 // Validate that the platforms passed are valid
 let
@@ -72,11 +70,9 @@ Promise.resolve()
 	// Log that the suite is starting up
 	.then(() => Output.banner('Starting and Configuring Suite Services'))
 	// Start an Appium server
-	.then(() => appium.runAppium(server))
+	.then(() => Appium.runAppium())
 	// Store the server PID for killing later
 	.then(cb => appiumPid = cb)
-	// Load in custom WD commands
-	.then(() => WebDriver.loadDriverCommands())
 	// Load custom Mocha filters
 	.then(() => WebDriver.addFilters())
 	// Retreive the test cycle IDs
@@ -85,7 +81,7 @@ Promise.resolve()
 	.catch(err => {
 		Output.error(err);
 		// Shutdown the Appium server, as process.exit() will leave it running
-		return appium.quitServ(appiumPid)
+		return Appium.quitServ(appiumPid)
 			.then(() => process.exit());
 	})
 	// Output when beginning suite for a new application
@@ -96,7 +92,7 @@ Promise.resolve()
 	// Notify that the suite is finished
 	.then(() => Output.banner('All Tests Run, Closing Down Services'))
 	// Kill the Appium server
-	.then(() => appium.quitServ(appiumPid))
+	.then(() => Appium.quitServ(appiumPid))
 	.catch(err => Output.error(err));
 
 /*******************************************************************************
@@ -120,7 +116,14 @@ function platformRun() {
 				// Display information for the test that is about to be conducted
 				.then(() => Output.banner(`Running For Platform '${platform}'`))
 				// Start the client using the specified config
-				.then(() => appium.startClient(platform))
+				.then(() => Appium.startClient({
+					app: 'AppceleratorStudio',
+					deviceName: platform,
+					platformName: platform,
+					platformVersion: Appium.getVersion(),
+				}))
+				// Assign this driver to a global, as we will need it in every test
+				.then(driver => global.studioDriver = driver)
 				// Run the Mocha test suite with the specified test file
 				.then(() => Mocha.mochaTest(platform))
 				// Collect the test results
@@ -130,7 +133,9 @@ function platformRun() {
 				// Alert that the test stage has finished
 				.then(() => Output.banner('Tests Run, Stopping Temporary Services'))
 				// Stop the test client
-				.then(() => appium.stopClient())
+				.then(() => Appium.stopClient(global.studioDriver))
+				// Close Studio
+				.then(() => exec('killall -9 AppceleratorStudio'))
 				// Use the list of test states to update the test cycle
 				// .then(() => Mocha.pushResults(tests, platforms[platform].cycleId, test, platform)) // TODO: Add this functionality back in later
 				// If fail is thrown then the next app starts to run, we don't want that if we're still waiting on more platforms
