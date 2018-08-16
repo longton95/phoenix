@@ -6,6 +6,8 @@ An _exciting_ new project aimed at the automation of the Appcelerator smoke test
 
 FYI, there's probably a fair few bugs, as the code is largely replicated from Yeti, and just tweaked to work with Desktop applications, submit [issues](https://github.com/appcelerator/phoenix/issues) to help me squash bugs faster :D
 
+An Epic for the project can be found on the [Axway JIRA](https://techweb.axway.com/jira/browse/QE-4017).
+
 ## Roadmap
 
 - [ ] Get Studio interactions for MacOS working
@@ -24,7 +26,7 @@ FYI, there's probably a fair few bugs, as the code is largely replicated from Ye
 
 #### Install Appium for Mac
 
-* Download an Appium for Mac release from [here](https://github.com/appium/appium-for-mac/releases) I'm currently using beta 3
+* Download an Appium for Mac release from [here](https://github.com/appium/appium-for-mac/releases). I'm currently using beta 3
 * Unzip the download, and place it in your `/Applications` directory
 
 #### Install Appcelerator Studio

@@ -4,8 +4,7 @@ const
 	path = require('path'),
 	spawn = require('child_process').spawn,
 	Output = require('./Output_Helper.js'),
-	exec = require('child_process').execSync,
-	version = require('../Config/Device_Config.js').version;
+	exec = require('child_process').execSync;
 
 class Appium_Helper {
 	/*****************************************************************************
@@ -44,11 +43,22 @@ class Appium_Helper {
 
 			global.platform = platform;
 
+			let version;
+
+			if (platform === 'Mac') {
+				version = exec('sw_vers');
+				version = version.toString('utf8');
+				version = version.match(/\d+\.\d+\.\d+/)[0];
+			} else if (platform === 'Windows') {
+				// TODO: Add in a method of finding Windows platform version
+				version = '10'; // Just a guess for now
+			}
+
 			const cap = {
 				app: 'AppceleratorStudio',
 				deviceName: platform,
 				platformName: platform,
-				platformVersion: version[platform],
+				platformVersion: version,
 				newCommandTimeout: (60 * 10) // Sets the amount of time Appium waits before shutting down in the background
 			};
 
