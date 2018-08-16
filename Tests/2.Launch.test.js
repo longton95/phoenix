@@ -9,7 +9,7 @@ const
 	driver = global.studioDriver,
 	ticket = __filename.split('/').pop().split('.')[1];
 
-describe.only(ticket, () => {
+describe(ticket, () => {
 	it('Fill Out App Details', async function () {
 		this.slow(120000);
 		this.timeout(120000);
