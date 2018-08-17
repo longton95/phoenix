@@ -20,7 +20,7 @@ class Output_Helper {
 	 ****************************************************************************/
 	static finish(done, value) {
 		appendLog('basic', 'Done\n', false);
-		if (global.logging === 'basic') {
+		if (!global.testing && global.logging === 'basic') {
 			process.stdout.write(`${Green}Done${Reset}\n`);
 		}
 
@@ -36,7 +36,7 @@ class Output_Helper {
 	 ****************************************************************************/
 	static skip(done, value) {
 		appendLog('basic', 'Skipping\n', false);
-		if (global.logging === 'basic') {
+		if (!global.testing && global.logging === 'basic') {
 			process.stdout.write(`${Yellow}Skipping${Reset}\n`);
 		}
 
@@ -54,10 +54,12 @@ class Output_Helper {
 	static info(message) {
 		appendLog('basic', `[INFO] ${message}`, true);
 		appendLog('debug', `[INFO] ${message}\n`, true);
-		if (global.logging === 'basic') {
-			process.stdout.write(`${Green}[INFO]${Reset} ${message}`);
-		} else {
-			process.stdout.write(`${Green}[INFO]${Reset} ${message}\n`);
+		if (!global.testing) {
+			if (global.logging === 'basic') {
+				process.stdout.write(`${Green}[INFO]${Reset} ${message}`);
+			} else {
+				process.stdout.write(`${Green}[INFO]${Reset} ${message}\n`);
+			}
 		}
 	}
 
@@ -69,10 +71,12 @@ class Output_Helper {
 	static error(message) {
 		appendLog('basic', `\n[ERROR] ${message}\n`, true);
 		appendLog('debug', `[ERROR] ${message}\n`, true);
-		if (global.logging === 'basic') {
-			process.stdout.write(`\n${Red}[ERROR] ${message}${Reset}\n`);
-		} else {
-			process.stdout.write(`${Red}[ERROR] ${message}${Reset}\n`);
+		if (!global.testing) {
+			if (global.logging === 'basic') {
+				process.stdout.write(`\n${Red}[ERROR] ${message}${Reset}\n`);
+			} else {
+				process.stdout.write(`${Red}[ERROR] ${message}${Reset}\n`);
+			}
 		}
 	}
 
@@ -83,9 +87,11 @@ class Output_Helper {
 	 ****************************************************************************/
 	static banner(message) {
 		appendLog('all', `\n############### ${message} ###############\n`, false);
-		process.stdout.write('\n-------------------------------------------------------\n');
-		process.stdout.write(`${Green}[INFO]${Reset} ${message}\n`);
-		process.stdout.write('-------------------------------------------------------\n');
+		if (!global.testing) {
+			process.stdout.write('\n-------------------------------------------------------\n');
+			process.stdout.write(`${Green}[INFO]${Reset} ${message}\n`);
+			process.stdout.write('-------------------------------------------------------\n');
+		}
 	}
 
 	/*****************************************************************************
@@ -95,7 +101,7 @@ class Output_Helper {
 	 ****************************************************************************/
 	static debug(message, type) {
 		appendLog(type, `[DEBUG] ${message}`, true);
-		if (global.logging === 'debug') {
+		if (!global.testing && global.logging === 'debug') {
 			process.stdout.write(`${Grey}[DEBUG] ${message}${Reset}`);
 		}
 	}

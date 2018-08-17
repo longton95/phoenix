@@ -31,6 +31,13 @@ class Appium_Helper {
 
 			global.platform = cap.platformName; // TODO: Replace this global, as it's overwritten by each new session
 
+			// If running on a mobile platform, add an automation driver
+			if (cap.platform === 'iOS') {
+				cap.automationName = 'XCUITest';
+			} else if (cap.platform === 'Android') {
+				cap.automationName = 'Appium';
+			}
+
 			cap.newCommandTimeout = (60 * 10); // Sets the amount of time Appium waits before shutting down in the background
 
 			driver.init(cap, err => {

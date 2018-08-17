@@ -51,6 +51,8 @@ class Mocha_Helper {
 						mocha.addFile(file);
 					});
 
+					global.testing = true;
+
 					mocha.run()
 						.on('test end', data => {
 							try {
@@ -141,12 +143,19 @@ class Mocha_Helper {
 								}
 
 							} catch (err) {
+								delete global.testing;
 								Output.error(err);
 							}
 						})
-						.on('end', () => resolve(tests));
+						.on('end', () => {
+							delete global.testing;
+							resolve(tests);
+						});
 				})
-				.catch(err => reject(err));
+				.catch(err => {
+					delete global.testing;
+					reject(err);
+				});
 		});
 	}
 

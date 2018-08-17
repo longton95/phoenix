@@ -3,17 +3,13 @@
 const
 	path = require('path'),
 	fs = require('fs-extra'),
+	app = require('../Config/Test_Config.js').app,
 	appc = require('../Config/Credentials.js').appc,
 	MochaFilter = require('mocha-filter')(global.filters);
 
 const
 	driver = global.studioDriver,
 	ticket = __filename.split('/').pop().split('.')[1];
-
-// TODO: Assign these to project variables
-const
-	appName = 'AppiumTest',
-	packageName = 'com.appium.appiumtest';
 
 let appLocation;
 
@@ -25,7 +21,9 @@ describe(ticket, () => {
 			.getAttribute('AXValue')
 			.then(workspacePath => {
 
-				appLocation = path.join(workspacePath, appName);
+				global.workspace = workspacePath;
+
+				appLocation = path.join(workspacePath, app.appName);
 
 				if (fs.existsSync(appLocation)) {
 					// This deletes the project, but Studio still retains it. Need to delete the project from within Studio to run again with the same project name
@@ -66,10 +64,10 @@ describe(ticket, () => {
 			.elementByXPath('/AXApplication/AXWindow[@AXTitle=\'New Mobile App Project\' and @AXSubrole=\'AXStandardWindow\']/AXButton[@AXTitle=\'&Next  \']')
 			.click()
 			.elementByXPath('/AXApplication/AXWindow[@AXTitle=\'New Mobile App Project\' and @AXSubrole=\'AXStandardWindow\']/AXTextField[1]')
-			.sendKeys(appName)
+			.sendKeys(app.appName)
 			.sleep(1000)
 			.elementByXPath('/AXApplication/AXWindow[@AXTitle=\'New Mobile App Project\' and @AXSubrole=\'AXStandardWindow\']/AXGroup[1]/AXTextField[1]')
-			.sendKeys(packageName)
+			.sendKeys(app.packageName)
 			.sleep(1000)
 			.elementByXPath('/AXApplication/AXWindow[@AXTitle=\'New Mobile App Project\' and @AXSubrole=\'AXStandardWindow\']/AXButton[@AXTitle=\'Finish\']')
 			.click()
