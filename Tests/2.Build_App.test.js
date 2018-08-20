@@ -5,19 +5,13 @@ const
 	app = require('../Config/Test_Config.js').app,
 	spec = require('../Config/Test_Config.js').ios,
 	Appium = require('../Helpers/Appium_Helper.js'),
-	Device = require('../Helpers/Device_Helper.js'),
 	MochaFilter = require('mocha-filter')(global.filters);
 
-const
-	driver = global.studioDriver,
-	ticket = __filename.split('/').pop().split('.')[1];
+const driver = global.studioDriver;
 
-let iosDriver;
-
-describe(ticket, () => {
+describe('Build App', () => {
 	it('Validate Appcelerator Studio Window is Still Open', async () => {
-
-		await driver.elementByXPath('/AXApplication/AXWindow[@AXSubrole=\'AXStandardWindow\']');
+		await driver.elementByXPath('/AXApplication/AXWindow[@AXSubrole=\'AXStandardWindow\']'); // Doesn't actually specify Studio is open, any open window would pass this. TODO: Find out how to make application specific XPaths work for Studio
 	});
 
 	it('Build the App', async () => {
@@ -28,8 +22,8 @@ describe(ticket, () => {
 			.should.equal(true);
 	});
 
-	it('Launch a WebDriver Instance for the iPhone', async () => {
-		iosDriver = await Appium.startClient({
+	it('Launch a WebDriver Instance for the iPhone Simulator', async () => {
+		global.simDriver = await Appium.startClient({
 			app: Appc.getAppPath(app.appName, spec.platform),
 			deviceName: spec.deviceName,
 			platformName: spec.platform,
@@ -37,19 +31,9 @@ describe(ticket, () => {
 		});
 	});
 
-	it('Click the "Hello World" Text in the App', async () => {
-		await iosDriver
+	it('Check That the Text "Hello World" is Visible', async () => {
+		await global.simDriver
 			.elementById('Hello, World')
-			.click()
-			.elementById('OK')
 			.isDisplayed().should.become(true);
-	});
-
-	it('Close the iPhone Instance', async () => {
-		await iosDriver.closeApp();
-
-		await Appium.stopClient(iosDriver);
-
-		await Device.killSim('iOS');
 	});
 });
