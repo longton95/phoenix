@@ -130,7 +130,7 @@ class Appium_Helper {
 		if (platform === 'darwin') {
 			version = exec('sw_vers');
 			version = version.toString('utf8');
-			version = version.match(/\d+\.\d+\.\d+/)[0];
+			version = version.match(/\d+\.\d+\.*\d*/)[0];
 		} else if (platform === 'windows') {
 			// TODO: Add in a method of finding Windows platform version
 			version = '10'; // Just a guess for now
