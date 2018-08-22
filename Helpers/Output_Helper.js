@@ -188,7 +188,7 @@ function generateTimestamp(now, full) {
 
 	let
 		date = now.toLocaleDateString('en-gb', dateOptions).replace(/\//g, '-'),
-		time = now.toLocaleTimeString('en-gb', timeOptions);
+		time = now.toLocaleTimeString('en-gb', timeOptions).replace(/:/g, '꞉'); // Replaces colons with a unicode character, colons aren't valid in filenames on Windows
 
 	if (full) {
 		return (`${date}_${time}`);
