@@ -27,8 +27,8 @@ class Mocha_Helper {
 			let mocha = new Mocha({
 				fullTrace: false,
 				useColors: true,
-				timeout: 60000,
-				slow: 40000,
+				timeout: 1200000,
+				slow: 80000,
 				reporter: 'mocha-jenkins-reporter',
 				reporterOptions: {
 					junit_report_name: `${platform}: Appcelerator Studio`,

@@ -32,12 +32,11 @@ describe('Generate Project', () => {
 			});
 
 		await driver
-			.elementByXPath('/AXApplication/AXWindow[0]/AXButton[@AXTitle=\'OK\']')
+			.elementByXPath('/AXApplication/AXWindow[0]/AXButton[@AXTitle=\'Launch\']')
 			.click()
 			.sleep(30000) // Wait for Studio to open
-			.elementByXPath('/AXApplication/AXWindow[0]')
-			.getAttribute('AXTitle')
-			.then(val => val.should.equal(`Studio - Axway Appcelerator Studio Dashboard - Axway Appcelerator Studio - ${global.workspace}`)); // Originally tried asserting the window name, but appium wasn't having it, so this is the ugly solution
+			.elementByXPath('/AXApplication/AXWindow[@AXTitle=\'Studio - Axway Appcelerator Studio Dashboard - Axway Appcelerator Studio\']')
+			.isDisplayed().should.become(true);
 	});
 
 	it('Open the New Project Window', async () => {
@@ -86,6 +85,8 @@ describe('Generate Project', () => {
 	});
 
 	it('Enter Password into Password Field', async () => {
+		appc.password.length.should.be.above(0);
+
 		await driver
 			.elementByXPath('/AXApplication/AXWindow[@AXTitle=\'Information\' and @AXSubrole=\'AXStandardWindow\']/AXTextField[@AXSubrole=\'AXSecureTextField\']')
 			.sendKeys(appc.password)
