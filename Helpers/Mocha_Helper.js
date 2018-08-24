@@ -1,6 +1,7 @@
 'use strict';
 
 const
+	os = require('os'),
 	path = require('path'),
 	fs = require('fs-extra'),
 	Mocha = require('mocha'),
@@ -23,23 +24,35 @@ class Mocha_Helper {
 				delete require.cache[file];
 			});
 
+			let hostOS;
+
+			switch (os.platform()) {
+				case 'darwin':
+					hostOS = 'Mac';
+					break;
+
+				case 'win32':
+					hostOS = 'Windows';
+					break;
+			}
+
 			// Create the new Mocha instance
 			let mocha = new Mocha({
 				fullTrace: false,
 				useColors: true,
-				timeout: 1200000,
-				slow: 80000,
+				timeout: 60000,
+				slow: 40000,
 				reporter: 'mocha-jenkins-reporter',
 				reporterOptions: {
-					junit_report_name: `${platform}: Appcelerator Studio`,
-					junit_report_path: path.join(global.projRoot, 'Reports', `${platform}_Appcelerator_Studio.xml`),
+					junit_report_name: `${hostOS}-${platform}: Appcelerator Studio`,
+					junit_report_path: path.join(global.projRoot, 'Reports', `${hostOS}-${platform}_Appcelerator_Studio.xml`),
 					junit_report_stack: 1
 				}
 			});
 
 			let tests = [];
 
-			getTests()
+			getTests(hostOS, platform)
 				.then(files => {
 					// Break here if no tests are defined
 					if (files.length === 0) {
@@ -202,7 +215,7 @@ class Mocha_Helper {
 /*******************************************************************************
  * Collect all test files for the desired platform and test application
  ******************************************************************************/
-function getTests() {
+function getTests(hostOS, platform) {
 	return new Promise((resolve, reject) => {
 		// Our container for all the test files to be run
 		let
@@ -210,7 +223,7 @@ function getTests() {
 			tests = [];
 
 		// Create a file path
-		dir = path.join(global.projRoot, 'Tests');
+		dir = path.join(global.projRoot, 'Tests', `${hostOS}-${platform}`);
 
 		try {
 			// Iterate through each file within the test directory

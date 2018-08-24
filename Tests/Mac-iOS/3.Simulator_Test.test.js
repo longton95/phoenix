@@ -1,8 +1,8 @@
 'use strict';
 
 const
-	Appium = require('../Helpers/Appium_Helper.js'),
-	Device = require('../Helpers/Device_Helper.js'),
+	Appium = require('../../Helpers/Appium_Helper.js'),
+	Device = require('../../Helpers/Device_Helper.js'),
 	MochaFilter = require('mocha-filter')(global.filters);
 
 describe('Simulator Test', () => {

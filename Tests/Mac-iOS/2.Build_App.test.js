@@ -1,10 +1,10 @@
 'use strict';
 
 const
-	Appc = require('../Helpers/Appc_Helper.js'),
-	app = require('../Config/Test_Config.js').app,
-	spec = require('../Config/Test_Config.js').ios,
-	Appium = require('../Helpers/Appium_Helper.js'),
+	Appc = require('../../Helpers/Appc_Helper.js'),
+	app = require('../../Config/Test_Config.js').app,
+	spec = require('../../Config/Test_Config.js').ios,
+	Appium = require('../../Helpers/Appium_Helper.js'),
 	MochaFilter = require('mocha-filter')(global.filters);
 
 const driver = global.studioDriver;

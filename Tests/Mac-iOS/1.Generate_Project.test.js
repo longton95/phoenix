@@ -3,8 +3,8 @@
 const
 	path = require('path'),
 	fs = require('fs-extra'),
-	app = require('../Config/Test_Config.js').app,
-	appc = require('../Config/Credentials.js').appc,
+	app = require('../../Config/Test_Config.js').app,
+	appc = require('../../Config/Credentials.js').appc,
 	MochaFilter = require('mocha-filter')(global.filters);
 
 const driver = global.studioDriver;
@@ -85,8 +85,6 @@ describe('Generate Project', () => {
 	});
 
 	it('Enter Password into Password Field', async () => {
-		appc.password.length.should.be.above(0);
-
 		await driver
 			.elementByXPath('/AXApplication/AXWindow[@AXTitle=\'Information\' and @AXSubrole=\'AXStandardWindow\']/AXTextField[@AXSubrole=\'AXSecureTextField\']')
 			.sendKeys(appc.password)
