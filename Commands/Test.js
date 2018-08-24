@@ -63,16 +63,22 @@ program.platforms.split(',').forEach(platform => {
 	}
 });
 
-let appiumServer; // A placeholder for storing the server object
+let
+	appiumMobileServer, // A placeholder for storing the server object
+	appiumDesktopServer; // A placeholder for storing the server object
 
 // The promise chain for setting up suite services
 Promise.resolve()
 	// Log that the suite is starting up
 	.then(() => Output.banner('Starting and Configuring Suite Services'))
 	// Start an Appium server
-	.then(() => Appium.runAppium())
+	.then(() => Appium.runDesktopAppium())
 	// Store the server object
-	.then(server => appiumServer = server)
+	.then(server => appiumDesktopServer = server)
+	// Start an Appium server
+	.then(() => Appium.runMobileAppium())
+	// Store the server object
+	.then(server => appiumMobileServer = server)
 	// Load custom Mocha filters
 	.then(() => WebDriver.addFilters())
 	// Retreive the test cycle IDs
@@ -81,7 +87,7 @@ Promise.resolve()
 	.catch(err => {
 		Output.error(err);
 		// Shutdown the Appium server, as process.exit() will leave it running
-		return Appium.quitServ(appiumServer)
+		return Appium.quitServ(appiumDesktopServer, appiumMobileServer)
 			.then(() => process.exit());
 	})
 	// Output when beginning suite for a new application
@@ -92,7 +98,7 @@ Promise.resolve()
 	// Notify that the suite is finished
 	.then(() => Output.banner('All Tests Run, Closing Down Services'))
 	// Kill the Appium server
-	.then(() => Appium.quitServ(appiumServer))
+	.then(() => Appium.quitServ(appiumDesktopServer, appiumMobileServer))
 	.catch(err => Output.error(err));
 
 /*******************************************************************************

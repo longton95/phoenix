@@ -6,6 +6,7 @@ const
 	chai = require('chai'),
 	path = require('path'),
 	fork = require('child_process').fork,
+	spawn = require('child_process').spawn,
 	Output = require('./Output_Helper.js'),
 	exec = require('child_process').execSync,
 	chaiAsPromised = require('chai-as-promised'),
@@ -47,13 +48,19 @@ class Appium_Helper {
 	static startClient(cap) {
 		return new Promise((resolve, reject) => {
 			Output.info('Starting WebDriver Instance... ');
+
+			const server = global.server;
+
+			if (cap.platform === 'iOS' || cap.platform === 'Android') {
+				server.port += 1;
+			}
 			// enabling chai assertion style: https://www.npmjs.com/package/chai-as-promised#node
 			chai.use(chaiAsPromised);
 			chai.should();
 			// enables chai assertion chaining
 			chaiAsPromised.transferPromiseness = wd.transferPromiseness;
 
-			let driver = wd.promiseChainRemote(global.server);
+			let driver = wd.promiseChainRemote(server);
 
 			global.platform = cap.platformName; // FIXME: Replace this global, as it's overwritten by each new session
 
@@ -88,14 +95,61 @@ class Appium_Helper {
 	}
 
 	/*****************************************************************************
-	 * Returns an instance of a running Appium server
+	 * Launch an Appium server for the mobile testing, as it cannot use the
+	 * desktop session
 	 ****************************************************************************/
-	static runAppium() {
+	static runMobileAppium() {
 		return new Promise((resolve, reject) => {
 			// Retreive the server properties
 			const server = global.server;
 
-			Output.info(`Starting Appium Server On '${server.host}:${server.port}'... `);
+			server.port += 1;
+
+			Output.info(`Starting Mobile Appium Server On '${server.host}:${server.port}'... `);
+			// We only want to allow starting a server on the local machine
+			const validAddresses = [ 'localhost', '0.0.0.0', '127.0.0.1' ];
+
+			if (validAddresses.includes(server.host)) {
+				let
+					appiumExe = path.join(__dirname, '..', 'node_modules', '.bin', 'appium'),
+					flags = [ '--log-no-colors', '-a', server.host, '-p', server.port, '--show-ios-log' ];
+
+				const appiumServer = spawn(appiumExe, flags);
+
+				appiumServer.stdout.on('data', output => {
+					const line = output.toString().trim();
+
+					const
+						regStr = `started on ${server.host}\\:${server.port}$`,
+						isRunning = new RegExp(regStr, 'g').test(line);
+
+					if (isRunning) {
+						Output.finish(resolve, appiumServer);
+					}
+				});
+
+				appiumServer.stderr.on('data', output => {
+					reject(output.toString());
+				});
+
+				appiumServer.on('error', err => {
+					reject(err.stack);
+				});
+			} else {
+				reject('Connecting to an External Appium Server is Not Currently Supported');
+			}
+		});
+	}
+
+	/*****************************************************************************
+	 * Returns an instance of a running Appium server
+	 ****************************************************************************/
+	static runDesktopAppium() {
+		return new Promise((resolve, reject) => {
+			// Retreive the server properties
+			const server = global.server;
+
+			Output.info(`Starting Desktop Appium Server On '${server.host}:${server.port}'... `);
 
 			// We only want to allow starting a server on the local machine
 			const validAddresses = [ 'localhost', '0.0.0.0', '127.0.0.1' ];
@@ -121,8 +175,6 @@ class Appium_Helper {
 						startServer = windowsServer;
 						break;
 				}
-
-				console.log(startServer);
 
 				const appiumServer = fork(startServer, args, options);
 
@@ -164,13 +216,18 @@ class Appium_Helper {
 	/*****************************************************************************
 	 * Tells the Appium server to shut down
 	 *
-	 * @param {String} appiumServer - The Appium server object
+	 * @param {String} appiumDesktopServer - The Appium server for desktop testing
+	 * @param {String} appiumMobileServer - The Appium server for mobile testing
 	 ****************************************************************************/
-	static async quitServ(appiumServer) {
-		Output.info('Stopping Appium Server... ');
+	static async quitServ(appiumDesktopServer, appiumMobileServer) {
+		Output.info('Stopping Appium Servers... ');
 
-		if (appiumServer) {
-			await appiumServer.kill();
+		if (appiumDesktopServer) {
+			await appiumDesktopServer.kill();
+		}
+
+		if (appiumMobileServer) {
+			await appiumMobileServer.kill();
 		}
 
 		Output.finish();
