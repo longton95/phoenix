@@ -48,11 +48,14 @@ class Appium_Helper {
 	static startClient(cap) {
 		return new Promise((resolve, reject) => {
 			Output.info('Starting WebDriver Instance... ');
+			// Retreive the server properties
+			const server = {
+				host: global.server.host,
+				port: global.server.port
+			};
 
-			const server = global.server;
-
-			if (cap.platform === 'iOS' || cap.platform === 'Android') {
-				server.port += 1;
+			if (cap.platformName === 'iOS' || cap.platformName === 'Android') {
+				server.port -= 1;
 			}
 			// enabling chai assertion style: https://www.npmjs.com/package/chai-as-promised#node
 			chai.use(chaiAsPromised);
@@ -65,9 +68,9 @@ class Appium_Helper {
 			global.platform = cap.platformName; // FIXME: Replace this global, as it's overwritten by each new session
 
 			// If running on a mobile platform, add an automation driver
-			if (cap.platform === 'iOS') {
+			if (cap.platformName === 'iOS') {
 				cap.automationName = 'XCUITest';
-			} else if (cap.platform === 'Android') {
+			} else if (cap.platformName === 'Android') {
 				cap.automationName = 'Appium';
 			}
 
@@ -101,17 +104,32 @@ class Appium_Helper {
 	static runMobileAppium() {
 		return new Promise((resolve, reject) => {
 			// Retreive the server properties
-			const server = global.server;
+			const server = {
+				host: global.server.host,
+				port: global.server.port
+			};
 
-			server.port += 1;
+			server.port -= 1;
 
 			Output.info(`Starting Mobile Appium Server On '${server.host}:${server.port}'... `);
 			// We only want to allow starting a server on the local machine
 			const validAddresses = [ 'localhost', '0.0.0.0', '127.0.0.1' ];
 
 			if (validAddresses.includes(server.host)) {
+				let exe;
+
+				switch (os.platform()) {
+					case 'darwin':
+						exe = 'appium';
+						break;
+
+					case 'win32':
+						exe = 'appium.cmd';
+						break;
+				}
+
 				let
-					appiumExe = path.join(__dirname, '..', 'node_modules', '.bin', 'appium'),
+					appiumExe = path.join(__dirname, '..', 'node_modules', '.bin', exe),
 					flags = [ '--log-no-colors', '-a', server.host, '-p', server.port, '--show-ios-log' ];
 
 				const appiumServer = spawn(appiumExe, flags);
@@ -147,7 +165,10 @@ class Appium_Helper {
 	static runDesktopAppium() {
 		return new Promise((resolve, reject) => {
 			// Retreive the server properties
-			const server = global.server;
+			const server = {
+				host: global.server.host,
+				port: global.server.port
+			};
 
 			Output.info(`Starting Desktop Appium Server On '${server.host}:${server.port}'... `);
 
