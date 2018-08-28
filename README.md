@@ -8,11 +8,14 @@ FYI, there's probably a fair few bugs, as the code is largely replicated from Ye
 An Epic for the project can be found on the [Axway JIRA](https://techweb.axway.com/jira/browse/QE-4017).
 
 ## Roadmap
-- [x] Create example tests for the MacOS platform
-- [x] Create method of simultaneously testing a desktop app and a mobile app
+- [x] Add MacOS Support
+- [x] Create example test for the MacOS platform
+- [x] Create method of simultaneously testing MacOS and iOS
+- [ ] Create method of simultaneously testing MacOS and Android
 - [x] Add Windows Support
-- [ ] Create example tests for the Windows platform
-- [ ] Add emulator helper functions for Windows
+- [x] Create example test for the Windows platform
+- [ ] Create method of simultaneously testing Windows and Windows Mobile
+- [ ] Create method of simultaneously testing Windows and Android
 - [ ] Re-integrate Zephyr API usage to push results to JIRA
 
 ## Discussion Points

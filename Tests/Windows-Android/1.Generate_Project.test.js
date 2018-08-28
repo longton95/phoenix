@@ -35,74 +35,79 @@ describe('Generate Project', () => {
 		await driver
 			.elementByName('Launch')
 			.click()
-			.sleep(30000) // Wait for Studio to open
-			// .SwitchTo().Window(allWindowHandles[0])
+			.sleep(70000);
+
+		let currWindow = (await driver.windowHandles())[0];
+
+		await driver
+			.window(currWindow)
 			.elementByName('Studio - Axway Appcelerator Studio Dashboard - Axway Appcelerator Studio')
 			.isDisplayed().should.become(true);
 	});
 
 	it('Open the New Project Window', async () => {
 		await driver
-			.elementByXPath('/AXApplication/AXMenuBar[0]/AXMenuBarItem[@AXTitle=\'File\']')
+			.elementByName('File')
 			.click()
-			.elementByXPath('/AXApplication/AXMenuBar[0]/AXMenuBarItem[@AXTitle=\'File\']/AXMenu[0]/AXMenuItem[@AXTitle=\'New\']')
+			.elementByName('New	Alt+Shift+N')
 			.click()
-			.elementByXPath('/AXApplication/AXMenuBar[0]/AXMenuBarItem[@AXTitle=\'File\']/AXMenu[0]/AXMenuItem[@AXTitle=\'New\']/AXMenu[0]/AXMenuItem[@AXTitle=\'Mobile App Project\']')
+			.elementByName('Mobile App Project')
 			.click()
-			.elementByXPath('/AXApplication/AXWindow[@AXTitle=\'New Mobile App Project\'')
+			.elementByName('Default Alloy Project')
 			.isDisplayed().should.become(true);
 	});
 
 	it('Select an Alloy Project', async () => {
 		await driver
-			.elementByXPath('/AXApplication/AXWindow[@AXTitle=\'New Mobile App Project\' and @AXSubrole=\'AXStandardWindow\']/AXScrollArea[1]/AXStaticText[@AXValue=\'Default Alloy Project\']')
+			.elementByName('Default Alloy Project')
 			.click()
-			.elementByXPath('/AXApplication/AXWindow[@AXTitle=\'New Mobile App Project\' and @AXSubrole=\'AXStandardWindow\']/AXButton[@AXTitle=\'&Next  \']')
+			.elementByName('&Next  ')
 			.click()
-			.elementByXPath('/AXApplication/AXWindow[@AXTitle=\'New Mobile App Project\' and @AXSubrole=\'AXStandardWindow\']/AXTextField[1]')
+			.elementByName('New Mobile App Project')
 			.isDisplayed().should.become(true);
 	});
 
 	it('Enter the App Details', async () => {
 		await driver
-			.elementByXPath('/AXApplication/AXWindow[@AXTitle=\'New Mobile App Project\' and @AXSubrole=\'AXStandardWindow\']/AXTextField[1]')
+			.elementByXPath('//Edit[1]') // Switch to a more reliable XPath, such as defining a name
 			.sendKeys(app.appName)
-			.elementByXPath('/AXApplication/AXWindow[@AXTitle=\'New Mobile App Project\' and @AXSubrole=\'AXStandardWindow\']/AXGroup[1]/AXTextField[1]')
+			.elementByXPath('//Group/Pane/Edit[1]') // Switch to a more reliable XPath, such as defining a name
 			.sendKeys(app.packageName)
 			.sleep(10000) // Wait, otherwise Studio will skip some setup steps
-			.elementByXPath('/AXApplication/AXWindow[@AXTitle=\'New Mobile App Project\' and @AXSubrole=\'AXStandardWindow\']/AXButton[@AXTitle=\'Finish\']')
+			.elementByName('Finish')
 			.click()
-			.sleep(15000)
-			.elementByXPath('/AXApplication/AXWindow[@AXTitle=\'Information\' and @AXSubrole=\'AXStandardWindow\']/AXButton[@AXTitle=\'Yes\']')
+			.sleep(30000)
+			.elementByName('Would you like to enable the Appcelerator Test service for this app?')
 			.isDisplayed().should.become(true);
 	});
 
 	it('Accept First Confirmation Window ', async () => {
 		await driver
-			.elementByXPath('/AXApplication/AXWindow[@AXTitle=\'Information\' and @AXSubrole=\'AXStandardWindow\']/AXButton[@AXTitle=\'Yes\']')
+			.elementByName('Yes')
 			.click()
-			.sleep(3000)
-			.elementByXPath('/AXApplication/AXWindow[@AXTitle=\'Information\' and @AXSubrole=\'AXStandardWindow\']/AXTextField[@AXSubrole=\'AXSecureTextField\']')
+			.sleep(10000)
+			.elementByName('Please provide your password for enabling Test service:')
 			.isDisplayed().should.become(true);
 	});
 
 	it('Enter Password into Password Field', async () => {
 		await driver
-			.elementByXPath('/AXApplication/AXWindow[@AXTitle=\'Information\' and @AXSubrole=\'AXStandardWindow\']/AXTextField[@AXSubrole=\'AXSecureTextField\']')
+			.elementByXPath('//Edit[1]')
 			.sendKeys(appc.password)
-			.elementByXPath('/AXApplication/AXWindow[@AXTitle=\'Information\' and @AXSubrole=\'AXStandardWindow\']/AXButton[@AXTitle=\'OK\']')
+			.elementByName('OK')
 			.click()
-			.sleep(15000)
-			.elementByXPath('/AXApplication/AXWindow[@AXTitle=\'Information\' and @AXSubrole=\'AXStandardWindow\']/AXButton[@AXTitle=\'Yes\']')
+			.sleep(20000)
+			.elementByName('Would you like to enable native API access with Hyperloop for this app?')
 			.isDisplayed().should.become(true);
 	});
 
 	it('Accept Second Confirmation Window', async () => {
 		await driver
-			.elementByXPath('/AXApplication/AXWindow[@AXTitle=\'Information\' and @AXSubrole=\'AXStandardWindow\']/AXButton[@AXTitle=\'Yes\']')
+			.elementByName('Yes')
 			.click()
-			.sleep(30000);
-		// Add an assertion to something, probably the main window being focused again
+			.sleep(30000)
+			.elementByName('TiApp Editor')
+			.isDisplayed().should.become(true);
 	});
 
 	it('Check the Project Was Built Succesfully', async () => {
