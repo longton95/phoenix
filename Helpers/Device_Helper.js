@@ -11,14 +11,9 @@ class Device_Helper {
 	 * Launch the emulator specified in the device_config.js for the current test
 	 *
 	 * @param {String} devName - The name of the AVD emulator used for testing
-	 * @param {String} platform - The current test platform
 	 ****************************************************************************/
-	static launchEmu(devName, platform) {
+	static launchEmu(devName) {
 		return new Promise(resolve => {
-			// If the current test isn't Android, then exit here
-			if (platform !== 'Android') {
-				return resolve();
-			}
 
 			Output.info(`Launching Android device '${devName}'... `);
 
@@ -33,6 +28,7 @@ class Device_Helper {
 					return Output.finish(resolve, prc.pid);
 				}
 			});
+
 			prc.stderr.on('data', data => {
 				Output.debug(data.toString(), 'debug');
 			});
@@ -42,22 +38,18 @@ class Device_Helper {
 	/*****************************************************************************
 	 * Use the PID of the emulator to kill it
 	 *
-	 * @param {String} platform - The current test platform
+	 * @param {String} pid - The process ID to terminate
 	 ****************************************************************************/
-	static killEmu(platform, pid) {
+	static killEmu() {
 		return new Promise(resolve => {
-			// If the current test isn't iOS, then exit here
-			if (platform !== 'Android') {
-				return resolve();
-			}
-
 			Output.info('Shutting Down the Android Emulator... ');
 
-			if (!pid) {
-				Output.skip(resolve);
-			}
+			if (global.androidPID) {
+				// TODO: Add a Windows method for ending the emulator
+				exec(`kill -9 ${global.androidPID}`);
 
-			exec(`kill -9 ${pid}`);
+				delete global.androidPID;
+			}
 
 			Output.finish(resolve, null);
 		});
@@ -65,16 +57,9 @@ class Device_Helper {
 
 	/*****************************************************************************
 	 * Kill all the iOS simulators using the killall command
-	 *
-	 * @param {String} platform - The current test platform
 	 ****************************************************************************/
-	static killSim(platform) {
+	static killSim() {
 		return new Promise(resolve => {
-			// If the current test isn't Android, then exit here
-			if (platform !== 'iOS') {
-				return resolve();
-			}
-
 			Output.info('Shutting Down the iOS Simulator... ');
 
 			exec('xcrun simctl shutdown booted');

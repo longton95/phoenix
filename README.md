@@ -11,7 +11,7 @@ An Epic for the project can be found on the [Axway JIRA](https://techweb.axway.c
 - [x] Add MacOS Support
 - [x] Create example test for the MacOS platform
 - [x] Create method of simultaneously testing MacOS and iOS
-- [ ] Create method of simultaneously testing MacOS and Android
+- [x] Create method of simultaneously testing MacOS and Android
 - [x] Add Windows Support
 - [x] Create example test for the Windows platform
 - [ ] Create method of simultaneously testing Windows and Windows Mobile

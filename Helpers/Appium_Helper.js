@@ -7,6 +7,7 @@ const
 	path = require('path'),
 	fork = require('child_process').fork,
 	spawn = require('child_process').spawn,
+	Device = require('./Device_Helper.js'),
 	Output = require('./Output_Helper.js'),
 	exec = require('child_process').execSync,
 	chaiAsPromised = require('chai-as-promised'),
@@ -46,7 +47,7 @@ class Appium_Helper {
 	 * @param {String} platform - The platform that is about to be launched
 	 ****************************************************************************/
 	static startClient(cap) {
-		return new Promise((resolve, reject) => {
+		return new Promise(async (resolve, reject) => {
 			Output.info('Starting WebDriver Instance... ');
 			// Retreive the server properties
 			const server = {
@@ -54,15 +55,19 @@ class Appium_Helper {
 				port: global.server.port
 			};
 
+			// Connect to the mobile testing server, not the desktop session
 			if (cap.platformName === 'iOS' || cap.platformName === 'Android') {
 				server.port -= 1;
 			}
-			// enabling chai assertion style: https://www.npmjs.com/package/chai-as-promised#node
+
+			// Enabling chai assertion style: https://www.npmjs.com/package/chai-as-promised#node
 			chai.use(chaiAsPromised);
 			chai.should();
-			// enables chai assertion chaining
+
+			// Enables chai assertion chaining
 			chaiAsPromised.transferPromiseness = wd.transferPromiseness;
 
+			// Establish the testing driver
 			let driver = wd.promiseChainRemote(server);
 
 			global.platform = cap.platformName; // FIXME: Replace this global, as it's overwritten by each new session
@@ -76,6 +81,11 @@ class Appium_Helper {
 
 			cap.newCommandTimeout = (60 * 10); // Sets the amount of time Appium waits before shutting down in the background
 
+			// If we're running an Android Emulator, launch it now, as this isn't handled by Appium
+			if (cap.platformName === 'Android') {
+				global.androidPID = await Device.launchEmu(cap.deviceName);
+			}
+
 			driver.init(cap, err => {
 				(err) ? reject(err) : Output.finish(resolve, driver);
 			});
@@ -86,15 +96,29 @@ class Appium_Helper {
 	 * Stops the WD session, but first it closes and removes the app from the
 	 * device, to attempt to save storage space
 	 ****************************************************************************/
-	static stopClient(driver) {
-		return new Promise((resolve, reject) => {
-			Output.info('Stopping WebDriver Instance... ');
+	static async stopClient(driver) {
+		Output.info('Stopping WebDriver Instance... ');
 
-			Promise.resolve()
-				.then(() => driver.quit())
-				.catch(err => reject(err))
-				.then(() => Output.finish(resolve, null));
-		});
+		const
+			capabilities = await driver.sessionCapabilities(),
+			platform = capabilities.platformName;
+
+		switch (platform) {
+			case 'iOS':
+				await driver.closeApp();
+				await driver.quit();
+				await Device.killSim();
+				break;
+
+			case 'Android':
+				await driver.closeApp();
+				await driver.quit();
+				await Device.killEmu();
+				break;
+
+			default:
+				await driver.quit();
+		}
 	}
 
 	/*****************************************************************************

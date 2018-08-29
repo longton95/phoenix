@@ -11,9 +11,9 @@ describe('Simulator Test', () => {
 
 	it('Click the "Hello World" Text in the App', async () => {
 		await global.mobDriver
-			.elementById('Hello, World')
+			.elementByAndroidUIAutomator('new UiSelector().text("Hello, World")')
 			.click()
-			.elementById('OK')
+			.elementByAndroidUIAutomator('new UiSelector().text("OK")')
 			.isDisplayed().should.become(true);
 	});
 });
