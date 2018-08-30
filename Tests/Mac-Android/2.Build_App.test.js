@@ -14,8 +14,6 @@ describe('Build App', () => {
 		await driver.elementByXPath('/AXApplication/AXWindow[@AXSubrole=\'AXStandardWindow\']'); // Doesn't actually specify Studio is open, any open window would pass this. TODO: Find out how to make application specific XPaths work for Studio
 	});
 
-	global.workspace = '/Users/shaig/Documents/Appcelerator_Studio_Workspace';
-
 	it('Build the App ', async () => {
 		await Appc.buildApp(app.appName, spec.platform);
 
