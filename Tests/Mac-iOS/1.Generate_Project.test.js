@@ -1,27 +1,49 @@
 'use strict';
 
 const
+	os = require('os'),
 	path = require('path'),
 	fs = require('fs-extra'),
+	Output = require('../../Helpers/Output_Helper'),
 	app = require('../../Config/Test_Config.js').app,
 	appc = require('../../Config/Credentials.js').appc,
 	MochaFilter = require('mocha-filter')(global.filters);
 
-const driver = global.studioDriver;
+const
+	driver = global.studioDriver,
+	defaultWorkspace = (path.join(os.homedir(), 'Documents', 'Appcelerator_Studio_Workspace'));
 
 let appLocation;
 
 describe('Generate Project', () => {
 	before(async () => {
+		try {
+			await driver
+				.sleep(5000) // Wait for the Workspace selector to open
+				.elementByXPath('/AXApplication/AXWindow[0]/AXComboBox')
+				.getAttribute('AXValue')
+				.then(workspacePath => {
+
+					global.workspace = workspacePath;
+
+				});
+
+			await driver
+				.elementByXPath('/AXApplication/AXWindow[0]/AXButton[@AXTitle=\'Launch\']')
+				.click();
+		} catch (error) {
+			Output.log('Studio is Either open or has a default Workspace selected \n' + error);
+
+			if (fs.existsSync(defaultWorkspace)) {
+				global.workspace = defaultWorkspace;
+			}
+		}
+
 		await driver
-			.sleep(5000) // Wait for the Workspace selector to open
-			.elementByXPath('/AXApplication/AXWindow[0]/AXComboBox')
-			.getAttribute('AXValue')
-			.then(workspacePath => {
+			.sleep(30000) // Wait for Studio to open
+			.then(workspace => {
 
-				global.workspace = workspacePath;
-
-				appLocation = path.join(workspacePath, app.appName);
+				appLocation = path.join(global.workspace, app.appName);
 
 				if (fs.existsSync(appLocation)) {
 					// This deletes the project, but Studio still retains it. Need to delete the project from within Studio to run again with the same project name
@@ -29,12 +51,7 @@ describe('Generate Project', () => {
 				}
 
 				fs.existsSync(appLocation).should.equal(false);
-			});
-
-		await driver
-			.elementByXPath('/AXApplication/AXWindow[0]/AXButton[@AXTitle=\'Launch\']')
-			.click()
-			.sleep(30000) // Wait for Studio to open
+			})
 			.elementByXPath('/AXApplication/AXWindow[@AXTitle=\'Studio - Axway Appcelerator Studio Dashboard - Axway Appcelerator Studio\']')
 			.isDisplayed().should.become(true);
 	});

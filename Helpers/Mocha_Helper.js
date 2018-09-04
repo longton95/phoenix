@@ -20,7 +20,7 @@ class Mocha_Helper {
 			Output.info('Starting Tests\n');
 
 			// Have to clear cache so that Mocha will run the same tests twice, solution taken from here https://github.com/mochajs/mocha/issues/995#issuecomment-261752316
-			Object.keys(require.cache).forEach(function(file) {
+			Object.keys(require.cache).forEach(function (file) {
 				delete require.cache[file];
 			});
 
@@ -105,7 +105,7 @@ class Mocha_Helper {
 										test = {
 											name: ticket,
 											state: 'Skip',
-											errors: [data.title.replace(/\\/g, '').replace(/"/g, '\'')]
+											errors: [ data.title.replace(/\\/g, '').replace(/"/g, '\'') ]
 										};
 									}
 								} else if (data.state === 'passed') {
@@ -146,7 +146,7 @@ class Mocha_Helper {
 										test = {
 											name: ticket,
 											state: 'Fail',
-											errors: [failMessage]
+											errors: [ failMessage ]
 										};
 									}
 								}
