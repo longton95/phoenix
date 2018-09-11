@@ -1,12 +1,12 @@
 'use strict';
 
 const
+	os = require('os'),
 	path = require('path'),
 	program = require('commander'),
 	Mocha = require('../Helpers/Mocha_Helper.js'),
 	Output = require('../Helpers/Output_Helper.js'),
 	Appium = require('../Helpers/Appium_Helper.js'),
-	Device = require('../Helpers/Device_Helper.js'),
 	// Zephyr = require('../Helpers/Zephyr_Helper.js'), // TODO: Add this functionality back in later
 	WebDriver = require('../Helpers/WebDriver_Helper.js');
 
@@ -32,6 +32,17 @@ global.server = {
 	host: program.address,
 	port: program.port
 };
+
+// Set the global for the hostOS to the current OS being run on
+switch (os.platform()) {
+	case 'darwin':
+		global.hostOS = 'Mac';
+		break;
+
+	case 'win32':
+		global.hostOS = 'Windows';
+		break;
+}
 
 // Setup the logging directory for this run
 Output.setupLogDir(err => {
@@ -63,22 +74,12 @@ program.platforms.split(',').forEach(platform => {
 	}
 });
 
-let
-	appiumMobileServer, // A placeholder for storing the server object
-	appiumDesktopServer; // A placeholder for storing the server object
-
 // The promise chain for setting up suite services
 Promise.resolve()
 	// Log that the suite is starting up
 	.then(() => Output.banner('Starting and Configuring Suite Services'))
 	// Start an Appium server
-	.then(() => Appium.runDesktopAppium())
-	// Store the server object
-	.then(server => appiumDesktopServer = server)
-	// Start an Appium server
-	.then(() => Appium.runMobileAppium())
-	// Store the server object
-	.then(server => appiumMobileServer = server)
+	.then(() => Appium.runAppium())
 	// Load custom Mocha filters
 	.then(() => WebDriver.addFilters())
 	// Retreive the test cycle IDs
@@ -87,7 +88,7 @@ Promise.resolve()
 	.catch(err => {
 		Output.error(err);
 		// Shutdown the Appium server, as process.exit() will leave it running
-		return Appium.quitServ(appiumDesktopServer, appiumMobileServer)
+		return Appium.quitServ()
 			.then(() => process.exit());
 	})
 	// Output when beginning suite for a new application
@@ -98,7 +99,7 @@ Promise.resolve()
 	// Notify that the suite is finished
 	.then(() => Output.banner('All Tests Run, Closing Down Services'))
 	// Kill the Appium server
-	.then(() => Appium.quitServ(appiumDesktopServer, appiumMobileServer))
+	.then(() => Appium.quitServ())
 	.catch(err => Output.error(err));
 
 /*******************************************************************************
@@ -116,35 +117,19 @@ function platformRun() {
 				return;
 			}
 
-			let tests; // A holder for the test results
-
 			p = p
+				// Set the global property for platformOS
+				.then(() => global.platformOS = platform)
 				// Display information for the test that is about to be conducted
 				.then(() => Output.banner(`Running For Platform '${platform}'`))
-				// Generate a capability set based on the OS
-				.then(() => Appium.generateHostCapabilities())
-				// Start the client using the specified config
-				.then(cap => Appium.startClient(cap))
-				// Assign this driver to a global, as we will need it in every test
-				.then(driver => global.studioDriver = driver)
 				// Run the Mocha test suite with the specified test file
 				.then(() => Mocha.mochaTest(platform))
-				// Collect the test results
-				.then(value => tests = value)
-				// If fail is thrown then the next app starts to run, we don't want that if we're still waiting on more platforms
-				.catch(error => Output.error(error))
-				// Alert that the test stage has finished
-				.then(() => Output.banner('Tests Run, Stopping Temporary Services'))
-				// Stop the test client
-				.then(() => Appium.stopClient(global.studioDriver))
-				// If fail is thrown then the next app starts to run, we don't want that if we're still waiting on more platforms
-				.catch(error => Output.error(error))
-				// Close Studio
-				.then(() => Device.processKill('AppceleratorStudio'))
 				// Use the list of test states to update the test cycle
-				// .then(() => Mocha.pushResults(tests, platforms[platform].cycleId, test, platform)) // TODO: Add this functionality back in later
+				// .then(results => Mocha.pushResults(results, platforms[platform].cycleId, test, platform)) // TODO: Add this functionality back in later
 				// If fail is thrown then the next app starts to run, we don't want that if we're still waiting on more platforms
-				.catch(error => Output.error(error));
+				.catch(error => Output.error(error))
+				// Clear the platformOS from the globals
+				.then(() => delete global.platformOS);
 		});
 
 		p.then(() => resolve());

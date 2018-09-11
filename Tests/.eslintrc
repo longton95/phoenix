@@ -9,7 +9,7 @@
       "it"
     },
     "rules": {
-      "no-unused-vars":["error", { "varsIgnorePattern": "MochaFilter|webdriver"}],
+      "no-unused-vars":["error", { "varsIgnorePattern": "MochaFilter|webdriver|driver"}],
       "security/detect-non-literal-regexp":"off",
       "security/detect-child-process":"off",
       "security/detect-new-buffer":"off",
