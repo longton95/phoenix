@@ -13,7 +13,7 @@ describe('Simulator Test', () => {
 
 	before(async () => {
 		await Appium.startClient({
-			app: Appc.getAppPath(),
+			app: Appc.genAppPath(),
 			platformName: capabilities.platform,
 			deviceName: capabilities.deviceName,
 			appPackage: capabilities.appPackage,

@@ -87,13 +87,6 @@ class Appc_Helper {
 	}
 
 	/*****************************************************************************
-	 * Return a path to the built application
-	 ****************************************************************************/
-	static getAppPath() {
-		return genAppPath();
-	}
-
-	/*****************************************************************************
 	 * See if there is already a built application in the application folder.
 	 * If one does exist, then check the build log to make sure that the last
 	 * build was succesful.
@@ -110,7 +103,7 @@ class Appc_Helper {
 		}
 
 		let
-			appPath = genAppPath(),
+			appPath = this.genAppPath(),
 			rootPath = genRootPath(),
 			logPath = path.join(rootPath, 'build', `build_${log}.log`);
 
@@ -147,23 +140,23 @@ class Appc_Helper {
 			return false;
 		}
 	}
-}
 
-/*******************************************************************************
- * Build a path to the location of the built app, dependant on platform
- ******************************************************************************/
-function genAppPath() {
-	let
-		appPath,
-		rootPath = genRootPath();
+	/*******************************************************************************
+	 * Build a path to the location of the built app, dependant on platform
+	 ******************************************************************************/
+	static genAppPath() {
+		let
+			appPath,
+			rootPath = genRootPath();
 
-	if (global.platformOS === 'iOS') {
-		appPath = path.join(rootPath, 'build', 'iphone', 'build', 'Products', 'Debug-iphonesimulator', `${app.appName}.app`);
-	} else if (global.platformOS === 'Android') {
-		appPath = path.join(rootPath, 'build', 'android', 'bin', `${app.appName}.apk`);
+		if (global.platformOS === 'iOS') {
+			appPath = path.join(rootPath, 'build', 'iphone', 'build', 'Products', 'Debug-iphonesimulator', `${app.appName}.app`);
+		} else if (global.platformOS === 'Android') {
+			appPath = path.join(rootPath, 'build', 'android', 'bin', `${app.appName}.apk`);
+		}
+
+		return appPath;
 	}
-
-	return appPath;
 }
 
 function genRootPath() {

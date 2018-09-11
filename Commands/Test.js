@@ -7,7 +7,6 @@ const
 	Mocha = require('../Helpers/Mocha_Helper.js'),
 	Output = require('../Helpers/Output_Helper.js'),
 	Appium = require('../Helpers/Appium_Helper.js'),
-	Device = require('../Helpers/Device_Helper.js'),
 	// Zephyr = require('../Helpers/Zephyr_Helper.js'), // TODO: Add this functionality back in later
 	WebDriver = require('../Helpers/WebDriver_Helper.js');
 

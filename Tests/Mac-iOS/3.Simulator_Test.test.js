@@ -15,7 +15,7 @@ describe('Simulator Test', () => {
 		await Appium.startClient({
 			platformName: capabilities.platform,
 			deviceName: capabilities.deviceName,
-			app: Appc.getAppPath()
+			app: Appc.genAppPath()
 		});
 	});
 
