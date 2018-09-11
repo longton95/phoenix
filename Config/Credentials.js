@@ -1,6 +1,6 @@
 'use strict';
 
-// NOTE: PLEASE DON'T COMMIT SENSETIVE DATA, THIS IS A PUBLIC REPO
+// NOTE: PLEASE DON'T COMMIT SENSITIVE DATA, THIS IS A PUBLIC REPO
 
 // Used in the Zephyr helper for publishing results to JIRA
 // NOTE: These should be credentials for the Appcelerator
@@ -11,7 +11,7 @@ exports.jira = {
 };
 
 exports.appc = {
-	org: 'qe_test_org_prod_team',
+	org: '100000675',
 	username: process.env.APPCUSER,
 	password: process.env.APPCPASS
 };

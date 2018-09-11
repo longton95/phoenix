@@ -73,23 +73,6 @@ class Device_Helper {
 	}
 
 	/*****************************************************************************
-	 * Use the appropriate command on the host operating system to terminate a
-	 * given process
-	 *
-	 * @param {String} processName - The name of the process to kill
-	 ****************************************************************************/
-	static async processKill(processName) {
-		switch (os.platform()) {
-			case 'darwin':
-				exec(`killall -9 ${processName}`);
-				break;
-			case 'win32':
-				exec(`Taskkill /IM ${processName}.exe /F`);
-				break;
-		}
-	}
-
-	/*****************************************************************************
 	 * Kill all the test simulators and emulators in the event of SIGINT.
 	 ****************************************************************************/
 	static quickKill() {

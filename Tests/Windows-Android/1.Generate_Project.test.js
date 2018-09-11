@@ -7,7 +7,7 @@ const
 	appc = require('../../Config/Credentials.js').appc,
 	MochaFilter = require('mocha-filter')(global.filters);
 
-const driver = global.studioDriver;
+const driver = global.driver;
 
 let appLocation;
 
