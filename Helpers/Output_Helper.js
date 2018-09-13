@@ -116,6 +116,29 @@ class Output_Helper {
 	}
 
 	/*****************************************************************************
+	 * Create the build directory if it doesn't exist. If it does, empty the
+	 * contents of it ready for the next run
+	 ****************************************************************************/
+	static setupBuildDir() {
+		if (!global.projRoot) {
+			global.projRoot = '.';
+		}
+
+		const
+			rootPath = path.join(global.projRoot, 'Build', `${global.hostOS}-${global.platformOS}`),
+			appDir = path.join(rootPath, 'App'),
+			moduleDir = path.join(rootPath, 'Module'),
+			appLog = path.join(appDir, 'appc_new.log'),
+			moduleLog = path.join(moduleDir, 'appc_new.log');
+
+		fs.emptyDirSync(appDir);
+		fs.emptyDirSync(moduleDir);
+
+		fs.ensureFileSync(appLog);
+		fs.ensureFileSync(moduleLog);
+	}
+
+	/*****************************************************************************
 	 * Creates the logging records for a new run, setting up an overhead
 	 * directory, containing a log of formatted data, and a log of debug data. It
 	 * also creates a directory for storing any screenshots of failed tests.
@@ -124,6 +147,7 @@ class Output_Helper {
 		if (!global.projRoot) {
 			global.projRoot = '.';
 		}
+		// Generate a timestamp to be used on the current run
 		global.timestamp = generateTimestamp(new Date(), true);
 
 		// Allows us to know whether or not we should be logging to the files

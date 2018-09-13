@@ -126,6 +126,8 @@ function platformRun() {
 				.then(() => global.platformOS = platform)
 				// Display information for the test that is about to be conducted
 				.then(() => Output.banner(`Running For Platform '${platform}'`))
+				// Create the build directory
+				.then(() => Output.setupBuildDir())
 				// Run the Mocha test suite with the specified test file
 				.then(() => Mocha.mochaTest())
 				// Use the list of test states to update the test cycle

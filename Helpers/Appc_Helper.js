@@ -10,27 +10,20 @@ const
 	appc = require('../Config/Credentials.js').appc;
 
 class Appc_Helper {
-
 	/*****************************************************************************
 	 * Creates the application
 	 *
 	 * We check if there is already an application in the specified folder
-	 * Apps/<OS>-<Platform> and wipe the directory, the log file is created to track
-	 * the output of the Appc CLI
+	 * Apps/<OS>-<Platform> and wipe the directory, the log file is created to
+	 * track the output of the Appc CLI
 	 ****************************************************************************/
-
 	static newApp() {
 		return new Promise((resolve, reject) => {
 			Output.info('Generating New App... ');
 
 			const
-				rootPath = genRootPath(app.name),
-				projectDir = path.join(rootPath, '..'),
-				logFile = path.join(projectDir, 'app', 'appc_new.log');
-
-			fs.emptyDirSync(projectDir);
-
-			fs.ensureFileSync(logFile);
+				rootPath = genRootPath('App'),
+				logFile = path.join(rootPath, '..', 'appc_new.log');
 
 			let
 				cmd = 'appc',
@@ -61,22 +54,16 @@ class Appc_Helper {
 	 * Creates the module
 	 *
 	 * We check if there is already an module in the specified folder
-	 * Apps/<OS>-<Platform> and wipe the directory, the log file is created to track
-	 * the output of the Appc CLI
+	 * Apps/<OS>-<Platform> and wipe the directory, the log file is created to
+	 * track the output of the Appc CLI
 	 ****************************************************************************/
-
 	static newModule() {
 		return new Promise((resolve, reject) => {
 			Output.info('Generating New Module... ');
 
 			const
-				rootPath = genRootPath(mod.name),
-				projectDir = path.join(rootPath, '..'),
-				logFile = path.join(projectDir, 'module', 'appc_new.log');
-
-			fs.emptyDirSync(projectDir);
-
-			fs.ensureFileSync(logFile);
+				rootPath = genRootPath('Module'),
+				logFile = path.join(rootPath, '..', 'appc_new.log');
 
 			let
 				cmd = 'appc',
@@ -106,11 +93,10 @@ class Appc_Helper {
 	/*****************************************************************************
 	 * Checks that the application has been created successfully
 	 ****************************************************************************/
-
 	static checkGeneratedApp() {
 		const
-			rootPath = genRootPath(app.name),
-			logPath = path.join(rootPath, '..', 'app', 'appc_new.log');
+			rootPath = genRootPath('App'),
+			logPath = path.join(rootPath, '..', 'appc_new.log');
 
 		if (fs.existsSync(logPath)) {
 			let data = fs.readFileSync(logPath, 'utf-8');
@@ -126,12 +112,10 @@ class Appc_Helper {
 	/*****************************************************************************
 	 * Checks that the module has been created successfully
 	 ****************************************************************************/
-
 	static checkGeneratedModule() {
-
 		const
-			rootPath = genRootPath(mod.name),
-			logPath = path.join(rootPath, '..', 'module', 'appc_new.log');
+			rootPath = genRootPath('Module'),
+			logPath = path.join(rootPath, '..', 'appc_new.log');
 
 		if (fs.existsSync(logPath)) {
 			let data = fs.readFileSync(logPath, 'utf-8');
@@ -152,13 +136,12 @@ class Appc_Helper {
 	 *					it from the capability of all apps to be tested, or find a way to
 	 *					build with no services that doesn't throw an error at runtime.
 	 ****************************************************************************/
-
 	static buildApp() {
 		return new Promise((resolve, reject) => {
 			Output.info('Building Application... ');
 
 			let error = false,
-				rootPath = genRootPath(app.name);
+				rootPath = genRootPath('App');
 
 			let
 				cmd = 'appc',
@@ -183,14 +166,13 @@ class Appc_Helper {
 	/*****************************************************************************
 	 * Builds the required Module
 	 ****************************************************************************/
-
 	static buildModule() {
 		return new Promise((resolve, reject) => {
 			Output.info('Building Module... ');
 
 			let
 				error = false,
-				rootPath = path.join(genRootPath(mod.name), global.platformOS.toLowerCase());
+				rootPath = path.join(genRootPath('Module'), global.platformOS.toLowerCase());
 
 			let
 				cmd = 'appc',
@@ -217,7 +199,6 @@ class Appc_Helper {
 	 * If one does exist, then check the build log to make sure that the last
 	 * build was succesful.
 	 ****************************************************************************/
-
 	static checkBuiltApp() {
 		let log;
 
@@ -231,7 +212,7 @@ class Appc_Helper {
 
 		let
 			appPath = this.genAppPath(),
-			rootPath = genRootPath(app.name),
+			rootPath = genRootPath('App'),
 			logPath = path.join(rootPath, 'build', `build_${log}.log`);
 
 		if (fs.existsSync(appPath) && fs.existsSync(logPath)) {
@@ -256,26 +237,23 @@ class Appc_Helper {
 	 * See if there is already a built module in the module folder.
 	 * If one does exist, then check the module zip file has been generated.
 	 ****************************************************************************/
-
 	static checkBuiltModule() {
-
 		let platform = global.platformOS.toLowerCase();
 
 		const
-			rootPath = genRootPath(mod.name),
+			rootPath = genRootPath('Module'),
 			zipPath = (platform === 'ios') ? path.join(rootPath, platform, 'dist', `${mod.packageName}-iphone-1.0.0.zip`) : path.join(rootPath, platform, 'dist', `${mod.packageName}-${platform}-1.0.0.zip`);
 
 		return fs.existsSync(zipPath);
 	}
 
-	/*******************************************************************************
+	/*****************************************************************************
 	 * Build a path to the location of the built app, dependant on platform
-	 ******************************************************************************/
-
+	 ****************************************************************************/
 	static genAppPath() {
 		let
 			appPath,
-			rootPath = genRootPath(app.name);
+			rootPath = genRootPath('App');
 
 		if (global.platformOS === 'iOS') {
 			appPath = path.join(rootPath, 'build', 'iphone', 'build', 'Products', 'Debug-iphonesimulator', `${app.name}.app`);
@@ -287,8 +265,19 @@ class Appc_Helper {
 	}
 }
 
-function genRootPath(file) {
-	return path.join(global.projRoot, 'Apps', `${global.hostOS}-${global.platformOS}`, file);
+/*******************************************************************************
+ * Generate a path to the root of the application directory
+ ******************************************************************************/
+function genRootPath(type) {
+	let file;
+
+	if (type === 'App') {
+		file = app.name;
+	} else if (type === 'Module') {
+		file = mod.name;
+	}
+
+	return path.join(global.projRoot, 'Build', `${global.hostOS}-${global.platformOS}`, type, file);
 }
 
 module.exports = Appc_Helper;
