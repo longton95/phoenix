@@ -5,10 +5,10 @@ const
 	Appc = require('../../Helpers/Appc_Helper.js'),
 	MochaFilter = require('mocha-filter')(global.filters);
 
-describe('Generate Project', () => {
-	it('Generate a New Project', async () => {
-		await Appc.newApp();
+describe('Generate Module', () => {
+	it('Generate a New Module', async () => {
+		await Appc.newModule();
 
-		assert(Appc.checkGeneratedApp(), true);
+		assert(Appc.checkGeneratedModule(), true);
 	});
 });

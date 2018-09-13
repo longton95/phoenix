@@ -7,8 +7,8 @@ const
 
 describe('Generate Project', () => {
 	it('Generate a New Project', async () => {
-		await Appc.newProject();
+		await Appc.newApp();
 
-		assert(Appc.checkGenerated(), true);
+		assert(Appc.checkGeneratedApp(), true);
 	});
 });

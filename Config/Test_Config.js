@@ -15,6 +15,16 @@ exports.android = {
 };
 
 exports.app = {
-	appName: 'AppiumTest',
+	name: 'AppiumTest',
 	packageName: 'com.appium.appiumtest'
+};
+
+exports.mod = {
+	name: 'appiumtestmodule',
+	packageName: 'com.appium.appiumtestmodule',
+	version: '1.0',
+	author: 'appc',
+	copyright: 'Copyright Appcelerator',
+	licence: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur auctor risus sed odio eleifend, eu vestibulum eros volutpat. Integer consequat.',
+	description: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur scelerisque finibus elit ut ultrices. Phasellus aliquet ligula quis tempor pretium.'
 };

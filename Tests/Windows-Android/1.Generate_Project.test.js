@@ -22,7 +22,7 @@ describe('Generate Project', () => {
 
 				global.workspace = workspacePath;
 
-				appLocation = path.join(workspacePath, app.appName);
+				appLocation = path.join(workspacePath, app.name);
 
 				if (fs.existsSync(appLocation)) {
 					// This deletes the project, but Studio still retains it. Need to delete the project from within Studio to run again with the same project name
@@ -70,7 +70,7 @@ describe('Generate Project', () => {
 	it('Enter the App Details', async () => {
 		await driver
 			.elementByXPath('//Edit[1]') // Switch to a more reliable XPath, such as defining a name
-			.sendKeys(app.appName)
+			.sendKeys(app.name)
 			.elementByXPath('//Group/Pane/Edit[1]') // Switch to a more reliable XPath, such as defining a name
 			.sendKeys(app.packageName)
 			.sleep(10000) // Wait, otherwise Studio will skip some setup steps

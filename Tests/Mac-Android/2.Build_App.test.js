@@ -9,6 +9,6 @@ describe('Build App', () => {
 	it('Build the Application', async () => {
 		await Appc.buildApp();
 
-		assert.equal(Appc.checkBuilt(), true);
+		assert.equal(Appc.checkBuiltApp(), true);
 	});
 });
