@@ -1,8 +1,6 @@
 'use strict';
 
 const
-	fs = require('fs'),
-	path = require('path'),
 	request = require('request'),
 	Output = require('./Output_Helper.js'),
 	creds = require('../Config/Credentials.js').jira;
@@ -16,16 +14,13 @@ class Zephyr_Helper {
 	/*****************************************************************************
 	 * Use the JIRA and Zephyr APIs to update a given ticket with a test result.
 	 *
-	 * @param {String} ticket - The ticket to be updated
-	 * @param {String} moduleName - The module being tested
 	 * @param {String} status - The new status for the test execution
-	 * @param {Array[String]} comment - Array containing the comments for the test
+	 * @param {String} comment - A comment to attatch to the ticket
 	 * @param {String} cycleId - The Zephyr ID for the test cycle
-	 * @param {String} platform - The OS being run on
 	 ****************************************************************************/
-	static update(ticket, moduleName, status, comment, cycleId, platform) {
+	static updateExecution(status, comment, cycleId) {
 		return new Promise((resolve, reject) => {
-			Output.info(`Updating Zephyr Test For Issue '${ticket}'... `);
+			Output.info(`Updating Zephyr Test For '${global.hostOS}-${global.platformOS}'... `);
 
 			if (!global.update) {
 				Output.skip(resolve, null);
@@ -37,7 +32,7 @@ class Zephyr_Helper {
 
 				Promise.resolve()
 					// Use the test ticket name to find the Zephyr ticket ID
-					.then(() => getZephyr(ticket, moduleName))
+					.then(() => getZephyr())
 					// Assign the found value to the zephyrTic
 					.then(value => zephyrTic = value)
 					// Get the JIRA ID for the Zephyr ticket that needs updating
@@ -52,12 +47,41 @@ class Zephyr_Helper {
 					.then(() => resetTicket(execId))
 					// Use the execution ID to update the ticket with the relevant test update information
 					.then(() => updateTicket(execId, status, comment))
-					// Get images currently attatched to the execution
-					.then(() => getImages(execId))
-					// Remove them from the execution, as they're old and outdated
-					.then(imageIds => deleteImages(imageIds))
-					// If there are some new images, attatch them to the execution
-					.then(() => uploadImages(moduleName, execId, ticket, platform))
+					// Resolve the chain
+					.then(() => Output.finish(resolve, null))
+					// Check the issue, if it's a string then it's a message to be displayed
+					.catch(err => {
+						if (typeof(err) === 'string') {
+							Output.error(err);
+							resolve();
+						} else {
+							reject(err);
+						}
+					});
+			}
+		});
+	}
+
+	/*****************************************************************************
+	 * Use the JIRA and Zephyr APIs to update a given ticket with a test result.
+	 *
+	 * @param {String} stepId - The JIRA ID for the test step to update
+	 * @param {String} status - The test status to push to JIRA
+	 * @param {Array[String]} comment - The error output from the test
+	 ****************************************************************************/
+	static updateStep(stepId, status, comment) {
+		return new Promise((resolve, reject) => {
+			Output.info(`Update Test Step ${stepId}... `);
+
+			if (!global.update) {
+				Output.skip(resolve, null);
+			} else if (!stepId.match(/17\d{3}/)) {
+				// Checks whether the stepId is in the valid range
+				Output.skip(resolve, null);
+			} else {
+				Promise.resolve()
+					// Push the update to the test step
+					.then(() => updateTestStep(stepId, status, comment))
 					// Resolve the chain
 					.then(() => Output.finish(resolve, null))
 					// Check the issue, if it's a string then it's a message to be displayed
@@ -78,52 +102,41 @@ class Zephyr_Helper {
 	 * run. Only needs to be done once so is seperated from the rest of the API
 	 * calls
 	 *
-	 * @param {String} platforms - Mobile OSs selected for this test run
 	 * @param {String} appcSDK - The SDK version desired for testing
 	 ****************************************************************************/
-	static getCycleIds(platforms, appcSDK) {
+	static getCycleId(appcSDK) {
 		return new Promise((resolve, reject) => {
-			Output.info('Retreiving Zephyr Test Cycle IDs... ');
+			Output.info('Retreiving Zephyr Test Cycle ID... ');
 
 			if (!global.update) {
 				Output.skip(resolve, null);
 			} else {
-				let p = Promise.resolve();
+				const
+					sdkVersion = appcSDK.split('.').slice(0, 3).join('.'),
+					release = `Release ${sdkVersion}`,
+					cycleName = `Appium SDK ${sdkVersion} GA & 7.0.5 Core Release Smoke Tests`;
 
-				Object.keys(platforms).forEach(platform => {
-					let hostOS = process.platform;
+				let
+					cycleId,
+					releaseId,
+					projectId,
+					projectKey = 'TIMOB'; // I'm assuming we're not testing any other projects
 
-					// Match the host name to what will be used in JIRA/Zephyr
-					if (hostOS === 'darwin') {
-						hostOS = 'Mac';
-					}
-
-					const
-						release = `Release ${appcSDK.split('.').slice(0, 3).join('.')}`,
-						cycleName = `Appium ${release} ${hostOS}-${platform}`;
-
-					let
-						releaseId,
-						projectId,
-						projectKey = 'TIMOB'; // I'm assuming we're not testing any other projects
-
-					p = p
-						// Get the JIRA ID value for the project that the test belongs to
-						.then(() => getProject(projectKey))
-						// Assign the found value to the projectId
-						.then(value => projectId = value)
-						// Get the JIRA ID for the release version that is being tested for
-						.then(() => getRelease(projectId, release))
-						// Assign the found value to the releaseId
-						.then(value => releaseId = value)
-						// Use the project ID and the release version ID to find the Zephyr ID for the test cycle
-						.then(() => getCycle(projectId, releaseId, cycleName))
-						// Assign the ID
-						.then(value => platforms[platform].cycleId = value);
-				});
-
-				p
-					.then(() => Output.finish(resolve, null))
+				Promise.resolve()
+					// Get the JIRA ID value for the project that the test belongs to
+					.then(() => getProject(projectKey))
+					// Assign the found value to the projectId
+					.then(value => projectId = value)
+					// Get the JIRA ID for the release version that is being tested for
+					.then(() => getRelease(projectId, release))
+					// Assign the found value to the releaseId
+					.then(value => releaseId = value)
+					// Use the project ID and the release version ID to find the Zephyr ID for the test cycle
+					.then(() => getCycle(projectId, releaseId, cycleName))
+					// Assign the ID
+					.then(value => cycleId = value)
+					// Finish
+					.then(() => Output.finish(resolve, cycleId))
 					// Handle Errors
 					.catch(err => reject(err));
 			}
@@ -135,18 +148,12 @@ module.exports = Zephyr_Helper;
 
 /*******************************************************************************
  * Use the issue ticket number to get the Zephyr test ticket for the issue
- *
- * @param {String} ticket - The ticket number of the issue
- * @param {String} moduleName - The module being tested
  ******************************************************************************/
-function getZephyr(ticket, moduleName) {
+function getZephyr() {
 	return new Promise((resolve, reject) => {
-
-		let mod = moduleName.replace(/_/g, '');
-
 		const data = {
 			url: 'https://jira.appcelerator.org/rest/api/latest/search',
-			body: `{"jql":"project = TIMOB AND issuetype = Test AND text ~ '${mod} ${ticket}'"}`,
+			body: `{"jql":"project = TIMOB AND issuetype = Test AND text ~ 'Acceptance: Platform: ${global.hostOS} ${global.platformOS}'"}`,
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
@@ -258,13 +265,13 @@ function resetTicket(execId) {
  *
  * @param {String} execId - The execution ID of the Zephyr test
  * @param {String} status - Numerical value representing the status of the test
- * @param {Array[String]} comment - Array containing the comments for the test
+ * @param {String} comment - A comment to attatch to the ticket
  ******************************************************************************/
 function updateTicket(execId, status, comment) {
 	return new Promise((resolve, reject) => {
 		const data = {
 			url: `https://jira.appcelerator.org/rest/zapi/latest/execution/${execId}/execute`,
-			body: `{"status":"${status}", "comment":"${comment.length} Test Step(s) Failing\\n\\n${comment.join('\\n\\n')}"}`,
+			body: `{"status":"${status}", "comment":"${comment}"}`,
 			method: 'PUT',
 			headers: {
 				'Content-Type': 'application/json',
@@ -279,128 +286,28 @@ function updateTicket(execId, status, comment) {
 }
 
 /*******************************************************************************
- * Get the IDs of all images currently attatched to the Zephyr test execution
+ * Push an update to the test step, reflecting the test status, and display a
+ * comment regarding the results
  *
- * @param {String} execId - The execution ID of the Zephyr test
+ * @param {String} stepId - The step ID of the Zephyr test step
+ * @param {String} status - Numerical value representing the status of the test
+ * @param {Array[String]} comment - Array containing the comments for the test
  ******************************************************************************/
-function getImages(execId) {
+function updateTestStep(stepId, status, comment) {
 	return new Promise((resolve, reject) => {
 		const data = {
-			url: `https://jira.appcelerator.org/rest/zapi/latest/attachment/attachmentsByEntity?entityId=${execId}&entityType=execution`,
-			body: '{}',
-			method: 'GET',
+			url: `https://jira.appcelerator.org/rest/zapi/latest/stepResult/${stepId}`,
+			body: `{"status":"${status}", "comment":"${comment.length} Test Step(s) Failing\\n\\n${comment.join('\\n\\n')}"}`,
+			method: 'PUT',
 			headers: {
-				'X-Atlassian-Token': 'nocheck',
 				'Content-Type': 'application/json',
 				Authorization: `Basic ${encodedComb}`
 			}
 		};
 
 		makeRequest(data)
-			.then(response => {
-				let imageIds = [];
-
-				response.data.forEach(image => {
-					imageIds.push(image.fileId);
-				});
-
-				resolve(imageIds);
-			})
+			.then(() => resolve())
 			.catch(err => reject(err));
-	});
-}
-
-/*******************************************************************************
- * Delete any images currently attatched to the ticket, this way if the test was
- * a fail, then only new screenshots will be present, and if it changes to a
- * pass then we don't want old screenshots lingering
- *
- * @param {Array[String]} imageIds - List of IDs for images currently attatched
- ******************************************************************************/
-function deleteImages(imageIds) {
-	return new Promise((resolve, reject) => {
-		let p = Promise.resolve();
-
-		imageIds.forEach(imageId => {
-			const data = {
-				url: `https://jira.appcelerator.org/rest/zapi/latest/attachment/${imageId}`,
-				body: '{}',
-				method: 'DELETE',
-				headers: {
-					'X-Atlassian-Token': 'nocheck',
-					'Content-Type': 'application/json',
-					Authorization: `Basic ${encodedComb}`
-				}
-			};
-
-			p = p
-				.then(() => makeRequest(data))
-				.catch(err => reject(err));
-		});
-
-		p.then(() => resolve());
-	});
-}
-
-/*******************************************************************************
- * Upload the images found in the failure folder, and the originals from the
- * reference folder, and attatch them to the Zephyr test execution for the test
- *
- * @param {String} moduleName - The module being tested
- * @param {String} execId - The execution ID of the Zephyr test
- * @param {String} ticket - The name of the ticket that is being updated
- * @param {String} platform - The OS being run on
- ******************************************************************************/
-function uploadImages(moduleName, execId, ticket, platform) {
-	return new Promise((resolve, reject) => {
-		const
-			failPath = path.join(global.projRoot, 'Logs', global.timestamp, 'Screen_Shots'),
-			refPath = path.join(global.projRoot, 'Modules', moduleName, 'Screen_Shots');
-
-		let
-			images = [],
-			files = fs.readdirSync(failPath);
-
-		files.forEach(file => {
-			if (file.includes(`${ticket}_${platform}`)) {
-				const
-					fail = path.join(failPath, file),
-					ref = path.join(refPath, file.replace('_Failure', ''));
-
-				const
-					refExists = fs.existsSync(ref),
-					failExists = fs.existsSync(fail);
-
-				// Check that they both exist, had some nasty errors around this
-				if (refExists && failExists) {
-					images.push(ref);
-					images.push(fail);
-				}
-			}
-		});
-
-		let p = Promise.resolve();
-
-		images.forEach(image => {
-			const data = {
-				url: `https://jira.appcelerator.org/rest/zapi/latest/attachment?entityId=${execId}&entityType=execution`,
-				method: 'POST',
-				formData: {
-					file: fs.createReadStream(image)
-				},
-				headers: {
-					'X-Atlassian-Token': 'nocheck',
-					'Content-Type': 'application/json',
-					Authorization: `Basic ${encodedComb}`
-				}
-			};
-
-			p = p
-				.then(() => makeRequest(data))
-				.catch(err => reject(err));
-		});
-
-		p.then(() => resolve());
 	});
 }
 

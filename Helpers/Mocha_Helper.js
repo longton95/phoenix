@@ -1,7 +1,6 @@
 'use strict';
 
 const
-	os = require('os'),
 	path = require('path'),
 	fs = require('fs-extra'),
 	Mocha = require('mocha'),
@@ -11,10 +10,8 @@ const
 class Mocha_Helper {
 	/*****************************************************************************
 	 * Runs through the Mocha tests outlined in device_config.js
-	 *
-	 * @param {String} platform - The OS being run on
 	 ****************************************************************************/
-	static mochaTest(platform) {
+	static mochaTest() {
 		return new Promise((resolve, reject) => {
 
 			Output.info('Starting Tests\n');
@@ -24,18 +21,6 @@ class Mocha_Helper {
 				delete require.cache[file];
 			});
 
-			let hostOS;
-
-			switch (os.platform()) {
-				case 'darwin':
-					hostOS = 'Mac';
-					break;
-
-				case 'win32':
-					hostOS = 'Windows';
-					break;
-			}
-
 			// Create the new Mocha instance
 			let mocha = new Mocha({
 				fullTrace: false,
@@ -44,15 +29,15 @@ class Mocha_Helper {
 				slow: 80000,
 				reporter: 'mocha-jenkins-reporter',
 				reporterOptions: {
-					junit_report_name: `${hostOS}-${platform}: Appcelerator Studio`,
-					junit_report_path: path.join(global.projRoot, 'Reports', `${hostOS}-${platform}_Appcelerator_Studio.xml`),
+					junit_report_name: `${global.hostOS}-${global.platformOS}: Appcelerator CLI`,
+					junit_report_path: path.join(global.projRoot, 'Reports', `${global.hostOS}-${global.platformOS}_Appcelerator_CLI.xml`),
 					junit_report_stack: 1
 				}
 			});
 
 			let tests = [];
 
-			getTests(hostOS, platform)
+			getTests()
 				.then(files => {
 					// Break here if no tests are defined
 					if (files.length === 0) {
@@ -74,26 +59,9 @@ class Mocha_Helper {
 									test,
 									ticket = data.title;
 
-								if (data.title === 'Not For Platform') {
-									// If the test is marked as 'Not For Platform'
-									Output.log(`${ticket}: ${data.title} - Not For Platform`);
-									// There shouldn't be a case of this already in the array, but just in case
-									if (tests.includes(tests.find(x => x.name === ticket))) {
-										// Find the index of the ticket in the array
-										let index = tests.indexOf(tests.find(x => x.name === ticket));
-										// Add the skip message onto the object
-										tests[index].errors.push(data.title);
-									} else {
-										// Create the object
-										test = {
-											name: ticket,
-											state: data.title,
-											errors: []
-										};
-									}
-								} else if (data.pending === true) {
+								if (data.pending === true) {
 									// If the test is to was skipped
-									Output.log(`${ticket}: ${data.title} - Skipped`);
+									Output.log(`${data.title}: Skipped`);
 									// Check if the ticket is already in the array
 									if (tests.includes(tests.find(x => x.name === ticket))) {
 										// Find the index of the ticket in the array
@@ -103,33 +71,35 @@ class Mocha_Helper {
 									} else {
 										// If a ticket object isn't already in the array, create it
 										test = {
-											name: ticket,
-											state: 'Skip',
-											errors: [ data.title.replace(/\\/g, '').replace(/"/g, '\'') ]
+											state: 3,
+											name: data.title,
+											errors: [ data.title.replace(/\\/g, '').replace(/"/g, '\'') ],
+											stepId: path.basename(data.file, '.js').split('.')[0]
 										};
 									}
 								} else if (data.state === 'passed') {
 									// Action for if the test passed
-									Output.log(`${ticket}: ${data.title} - Passed`);
+									Output.log(`${data.title}: Passed`);
 									// Check if the ticket is already in the array
 									if (tests.includes(tests.find(x => x.name === ticket))) {
 										// Find the index of the ticket in the array
 										let index = tests.indexOf(tests.find(x => x.name === ticket));
 										// Change the state of the test to a pass if it was previously skipped
-										if (tests[index].state === 'Skip') {
-											tests[index].state = 'Pass';
+										if (tests[index].state === 3) {
+											tests[index].state = 1;
 										}
 									} else {
 										// Create a new ticket object if one doesn't exist
 										test = {
-											name: ticket,
-											state: 'Pass',
-											errors: []
+											state: 1,
+											name: data.title,
+											errors: [],
+											stepId: path.basename(data.file, '.js').split('.')[0]
 										};
 									}
 								} else if (data.state === 'failed') {
 									// Action for if the test failed
-									Output.log(`${ticket}: ${data.title} - Failed`);
+									Output.log(`${data.title}: Failed`);
 									Output.log(`Reason: ${data.err.message}`);
 									// Create a message to be attatched to the ticket
 									let failMessage = `[TEST STEP] ${data.title.replace(/"/g, '\'')}\\n[RESULT] ${data.err.message.replace(/\\/g, '').replace(/"/g, '\'')}`;
@@ -138,15 +108,16 @@ class Mocha_Helper {
 										// Find the index of the ticket in the array
 										let index = tests.indexOf(tests.find(x => x.name === ticket));
 										// Change the state of the test to a failure
-										tests[index].state = 'Fail';
+										tests[index].state = 2;
 										// Add the error into the array
 										tests[index].errors.push(failMessage);
 									} else {
 										// Create a new ticket object if one doesn't exist
 										test = {
-											name: ticket,
-											state: 'Fail',
-											errors: [ failMessage ]
+											state: 2,
+											name: data.title,
+											errors: [ failMessage ],
+											stepId: path.basename(data.file, '.js').split('.')[0]
 										};
 									}
 								}
@@ -178,36 +149,35 @@ class Mocha_Helper {
 	 *
 	 * @param {Array[Object]} tests - An array of objects containing the run results
 	 * @param {String} cycleId - The Zephyr ID for the test cycle
-	 * @param {String} moduleName - The module being tested
-	 * @param {String} platform - The OS being run on
 	 ******************************************************************************/
-	static pushResults(tests, cycleId, moduleName, platform) {
+	static pushResults(tests, cycleId) {
 		return new Promise((resolve, reject) => {
 			Output.banner('Publishing Zephyr results to JIRA');
 
-			let p = Promise.resolve();
+			let
+				passing = 0,
+				overall = 1,
+				p = Promise.resolve();
+
+			tests.forEach(test => {
+				// Change the state to failed if there is a test that didn't pass
+				if (test.state !== 1) {
+					overall = 2;
+				} else {
+					passing += 1;
+				}
+			});
 
 			tests.forEach(test => {
 				p = p
-					.then(() => {
-						if (test.state === 'Pass') {
-							// Push the result to JIRA as a pass (1)
-							return Zephyr.update(test.name, moduleName, '1', test.errors, cycleId, platform);
-						} else if (test.state === 'Fail') {
-							// Push the result to JIRA as a fail (2)
-							return Zephyr.update(test.name, moduleName, '2', test.errors, cycleId, platform);
-						} else if (test.state === 'Skip') {
-							// Push the result to JIRA as a work in progress (3)
-							return Zephyr.update(test.name, moduleName, '3', test.errors, cycleId, platform);
-						} else if (test.state === 'Not For Platform') {
-							// Push the result to JIRA as a not for platform (5)
-							return Zephyr.update(test.name, moduleName, '5', test.errors, cycleId, platform);
-						}
-					})
-					.catch((err) => reject(err));
+					.then(() => Zephyr.updateStep(test.stepId, test.state, test.errors))
+					.catch(err => reject(err));
 			});
 
-			p.then(() => resolve());
+			p
+				.then(() => Zephyr.updateExecution(overall, `${passing}/${tests.length} Tests Are Passing`, cycleId))
+				.then(() => resolve())
+				.catch(err => reject(err));
 		});
 	}
 }
@@ -215,7 +185,7 @@ class Mocha_Helper {
 /*******************************************************************************
  * Collect all test files for the desired platform and test application
  ******************************************************************************/
-function getTests(hostOS, platform) {
+function getTests() {
 	return new Promise((resolve, reject) => {
 		// Our container for all the test files to be run
 		let
@@ -223,7 +193,7 @@ function getTests(hostOS, platform) {
 			tests = [];
 
 		// Create a file path
-		dir = path.join(global.projRoot, 'Tests', `${hostOS}-${platform}`);
+		dir = path.join(global.projRoot, 'Tests', `${global.hostOS}-${global.platformOS}`);
 
 		try {
 			// Iterate through each file within the test directory

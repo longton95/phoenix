@@ -16,36 +16,32 @@ An Epic for the project can be found on the [Axway JIRA](https://techweb.axway.c
 - [x] Create example test for the Windows platform
 - [ ] Create method of simultaneously testing Windows and Windows Mobile
 - [ ] Create method of simultaneously testing Windows and Android
-- [ ] Re-integrate Zephyr API usage to push results to JIRA
-
-## Discussion Points
-* Do we assume a default location for the Studio workspace?
-* Do we assume that the user is already logged in?
+- [x] Re-integrate Zephyr API usage to push results to JIRA
 
 ## Running on MacOS
 
 ### Setup Steps
 
-#### Install Appium for Mac
-* Download an Appium for Mac release from [here](https://github.com/appium/appium-for-mac/releases). I'm currently using beta 3
-* Unzip the download, and place it in your `/Applications` directory
-
-#### Install Appcelerator Studio
-Can be downloaded from the [Axway Dashboard](https://platform.axway.com)
+### Install the Appcelerator CLI
+Run `npm i appcelerator -g`
 
 #### Install npm Packages
 From the project root, run `npm i`
 
 ### Running
-* App creation in Studio requires some platform credentials, export these as so from the CLI:
+* App creation requires some platform credentials, export these as so from the CLI:
 ```
 export APPCUSER=<Dashboard Username>
 export APPCPASS=<Dashboard Password>
 ```
 
-* Run the suite with `npm run test -- -p <platform>`
+* Publishing the results to JIRA requires credentials, export these as so from the CLI:
+```
+export JIRAUSER=<JIRA Username>
+export JIRAPASS=<JIRA Password>
+```
 
-You may also be prompted to allow certain programs accessibility access in System Preferences, this will only be required once.
+* Run the suite with `npm run test`
 
 ## Running on Windows
 

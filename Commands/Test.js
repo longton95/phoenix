@@ -1,13 +1,12 @@
 'use strict';
 
 const
-	os = require('os'),
 	path = require('path'),
 	program = require('commander'),
 	Mocha = require('../Helpers/Mocha_Helper.js'),
 	Output = require('../Helpers/Output_Helper.js'),
 	Appium = require('../Helpers/Appium_Helper.js'),
-	// Zephyr = require('../Helpers/Zephyr_Helper.js'), // TODO: Add this functionality back in later
+	Zephyr = require('../Helpers/Zephyr_Helper.js'),
 	WebDriver = require('../Helpers/WebDriver_Helper.js');
 
 program
@@ -33,8 +32,10 @@ global.server = {
 	port: program.port
 };
 
+let appcSDK = '7.3.0'; // FIXME: Remove hardcoding!!!
+
 // Set the global for the hostOS to the current OS being run on
-switch (os.platform()) {
+switch (process.platform) {
 	case 'darwin':
 		global.hostOS = 'Mac';
 		break;
@@ -60,6 +61,7 @@ process.on('SIGINT', () => {
 
 // Validate that the platforms passed are valid
 let
+	cycleId,
 	platforms = {},
 	suppPlatforms = [ 'iOS', 'Android' ];
 
@@ -83,7 +85,9 @@ Promise.resolve()
 	// Load custom Mocha filters
 	.then(() => WebDriver.addFilters())
 	// Retreive the test cycle IDs
-	// .then(() => Zephyr.getCycleIds(platforms, appcSDK)) // TODO: Add this functionality back in later
+	.then(() => Zephyr.getCycleId(appcSDK))
+	// Store the cycle ID for later use
+	.then(value => cycleId = value)
 	// Handle errors
 	.catch(err => {
 		Output.error(err);
@@ -123,9 +127,9 @@ function platformRun() {
 				// Display information for the test that is about to be conducted
 				.then(() => Output.banner(`Running For Platform '${platform}'`))
 				// Run the Mocha test suite with the specified test file
-				.then(() => Mocha.mochaTest(platform))
+				.then(() => Mocha.mochaTest())
 				// Use the list of test states to update the test cycle
-				// .then(results => Mocha.pushResults(results, platforms[platform].cycleId, test, platform)) // TODO: Add this functionality back in later
+				.then(results => Mocha.pushResults(results, cycleId))
 				// If fail is thrown then the next app starts to run, we don't want that if we're still waiting on more platforms
 				.catch(error => Output.error(error))
 				// Clear the platformOS from the globals
