@@ -47,8 +47,10 @@ class Zephyr_Helper {
 					.then(() => resetTicket(execId))
 					// Use the execution ID to update the ticket with the relevant test update information
 					.then(() => updateTicket(execId, status, comment))
+					// Retrieve the step IDs for the execution
+					.then(() => getStepIds(execId))
 					// Resolve the chain
-					.then(() => Output.finish(resolve, null))
+					.then(stepIds => Output.finish(resolve, stepIds))
 					// Check the issue, if it's a string then it's a message to be displayed
 					.catch(err => {
 						if (typeof(err) === 'string') {
@@ -74,9 +76,6 @@ class Zephyr_Helper {
 			Output.info(`Update Test Step ${stepId}... `);
 
 			if (!global.update) {
-				Output.skip(resolve, null);
-			} else if (!stepId.match(/17\d{3}/)) {
-				// Checks whether the stepId is in the valid range
 				Output.skip(resolve, null);
 			} else {
 				Promise.resolve()
@@ -151,9 +150,14 @@ module.exports = Zephyr_Helper;
  ******************************************************************************/
 function getZephyr() {
 	return new Promise((resolve, reject) => {
+		let extraArgs = '';
+
+		if (global.platformOS === 'Windows') {
+			extraArgs = ' - Android';
+		}
 		const data = {
 			url: 'https://jira.appcelerator.org/rest/api/latest/search',
-			body: `{"jql":"project = TIMOB AND issuetype = Test AND text ~ 'Acceptance: Platform: ${global.hostOS} ${global.platformOS}'"}`,
+			body: `{"jql":"project = TIMOB AND issuetype = Test AND text ~ 'Acceptance: Platform: ${global.hostOS} ${global.platformOS}${extraArgs}'"}`,
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
@@ -281,6 +285,36 @@ function updateTicket(execId, status, comment) {
 
 		makeRequest(data)
 			.then(() => resolve())
+			.catch(err => reject(err));
+	});
+}
+
+/*******************************************************************************
+ * Gets a list of all the step results linked with this execution ID, so they
+ * can be updated individually later on
+ *
+ * @param {String} execId - The execution ID of the Zephyr test
+ ******************************************************************************/
+function getStepIds(execId) {
+	return new Promise((resolve, reject) => {
+		const data = {
+			url: `https://jira.appcelerator.org/rest/zapi/latest/stepResult?executionId=${execId}`,
+			body: '{}',
+			method: 'GET',
+			headers: {
+				'Content-Type': 'application/json',
+				Authorization: `Basic ${encodedComb}`
+			}
+		};
+
+		makeRequest(data)
+			.then(response => {
+				try {
+					resolve(response);
+				} catch (err) {
+					reject(`Could Not Find Any Test Steps in the Execution ${execId} for the requested test cycle`);
+				}
+			})
 			.catch(err => reject(err));
 	});
 }

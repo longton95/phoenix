@@ -74,7 +74,7 @@ class Mocha_Helper {
 											state: 3,
 											name: data.title,
 											errors: [ data.title.replace(/\\/g, '').replace(/"/g, '\'') ],
-											stepId: path.basename(data.file, '.js').split('.')[0]
+											testNum: parseInt(path.basename(data.file, '.js').split('.')[0], 10)
 										};
 									}
 								} else if (data.state === 'passed') {
@@ -94,7 +94,7 @@ class Mocha_Helper {
 											state: 1,
 											name: data.title,
 											errors: [],
-											stepId: path.basename(data.file, '.js').split('.')[0]
+											testNum: parseInt(path.basename(data.file, '.js').split('.')[0], 10)
 										};
 									}
 								} else if (data.state === 'failed') {
@@ -117,7 +117,7 @@ class Mocha_Helper {
 											state: 2,
 											name: data.title,
 											errors: [ failMessage ],
-											stepId: path.basename(data.file, '.js').split('.')[0]
+											testNum: parseInt(path.basename(data.file, '.js').split('.')[0], 10)
 										};
 									}
 								}
@@ -155,6 +155,7 @@ class Mocha_Helper {
 			Output.banner('Publishing Zephyr results to JIRA');
 
 			let
+				stepIds,
 				passing = 0,
 				overall = 1,
 				p = Promise.resolve();
@@ -168,16 +169,19 @@ class Mocha_Helper {
 				}
 			});
 
+			p = p
+				.then(() => Zephyr.updateExecution(overall, `${passing}/${tests.length} Tests Are Passing`, cycleId))
+				.then(value => stepIds = value)
+				.catch(err => reject(err));
+
 			tests.forEach(test => {
 				p = p
-					.then(() => Zephyr.updateStep(test.stepId, test.state, test.errors))
+					.then(() => Zephyr.updateStep(stepIds[test.testNum - 1].id, test.state, test.errors))
 					.catch(err => reject(err));
 			});
 
-			p
-				.then(() => Zephyr.updateExecution(overall, `${passing}/${tests.length} Tests Are Passing`, cycleId))
-				.then(() => resolve())
-				.catch(err => reject(err));
+			p = p
+				.then(() => resolve());
 		});
 	}
 }
