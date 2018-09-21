@@ -3,6 +3,7 @@
 const
 	path = require('path'),
 	program = require('commander'),
+	Appc = require('../Helpers/Appc_Helper.js'),
 	Mocha = require('../Helpers/Mocha_Helper.js'),
 	Output = require('../Helpers/Output_Helper.js'),
 	Appium = require('../Helpers/Appium_Helper.js'),
@@ -14,6 +15,8 @@ program
 	.option('-l, --logging <level>', 'Set the amount of Output returned by the process, options are \'debug\' and \'basic\'. Defaults to \'basic\'.', 'basic')
 	.option('-A, --address <ip>', 'The IP address for where the Appium server is. Defaults to localhost', 'localhost')
 	.option('-P, --port <port>', 'The port that the Appium server will run on. Defaults to 4723', 4723)
+	.option('-c, --cli <cli_version>', 'CLI version to test against. Defaults to latest', 'latest')
+	.option('-s, --sdk <sdk_version>', 'SDK version to test against. Defaults to latest', 'latest')
 	.option('-u, --update', 'Publish the results to the Zephyr tests on JIRA.')
 	.option('-f, --force', 'Force rebuild applications.')
 	.parse(process.argv);
@@ -32,7 +35,9 @@ global.server = {
 	port: program.port
 };
 
-let appcSDK = '7.3.0'; // FIXME: Remove hardcoding!!!
+let
+	appcCLI = program.cli,
+	appcSDK = program.sdk;
 
 // Set the global for the hostOS to the current OS being run on
 switch (process.platform) {
@@ -80,12 +85,18 @@ program.platforms.split(',').forEach(platform => {
 Promise.resolve()
 	// Log that the suite is starting up
 	.then(() => Output.banner('Starting and Configuring Suite Services'))
+	// Install the required CLI version
+	.then(() => Appc.installCLI(appcCLI))
+	// Install the required SDK version
+	.then(() => Appc.installSDK(appcSDK))
+	// Retrieve the installed version
+	.then(value => appcSDK = value)
 	// Start an Appium server
 	.then(() => Appium.runAppium())
 	// Load custom Mocha filters
 	.then(() => WebDriver.addFilters())
 	// Retreive the test cycle IDs
-	.then(() => Zephyr.getCycleId(appcSDK))
+	.then(() => Zephyr.getCycleId(appcSDK, appcCLI))
 	// Store the cycle ID for later use
 	.then(value => cycleId = value)
 	// Handle errors

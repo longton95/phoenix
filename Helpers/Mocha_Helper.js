@@ -155,9 +155,9 @@ class Mocha_Helper {
 			Output.banner('Publishing Zephyr results to JIRA');
 
 			let
-				stepIds,
 				passing = 0,
 				overall = 1,
+				stepIds = [],
 				p = Promise.resolve();
 
 			tests.forEach(test => {
@@ -176,7 +176,7 @@ class Mocha_Helper {
 
 			tests.forEach(test => {
 				p = p
-					.then(() => Zephyr.updateStep(stepIds[test.testNum - 1].id, test.state, test.errors))
+					.then(() => Zephyr.updateStep(stepIds, test.testNum, test.state, test.errors))
 					.catch(err => reject(err));
 			});
 

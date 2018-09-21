@@ -3,6 +3,7 @@
 const
 	request = require('request'),
 	Output = require('./Output_Helper.js'),
+	exec = require('child_process').execSync,
 	creds = require('../Config/Credentials.js').jira;
 
 // Use the username and password to generate a base64 string, used to authenticate with JIRA
@@ -23,7 +24,7 @@ class Zephyr_Helper {
 			Output.info(`Updating Zephyr Test For '${global.hostOS}-${global.platformOS}'... `);
 
 			if (!global.update) {
-				Output.skip(resolve, null);
+				Output.skip(resolve, []);
 			} else {
 				let
 					execId,
@@ -55,7 +56,7 @@ class Zephyr_Helper {
 					.catch(err => {
 						if (typeof(err) === 'string') {
 							Output.error(err);
-							resolve();
+							resolve([]);
 						} else {
 							reject(err);
 						}
@@ -67,15 +68,27 @@ class Zephyr_Helper {
 	/*****************************************************************************
 	 * Use the JIRA and Zephyr APIs to update a given ticket with a test result.
 	 *
-	 * @param {String} stepId - The JIRA ID for the test step to update
+	 * @param {Array[Object]} step - Array containing details of the test steps
+	 * @param {Number} testNum - The order number of the test
 	 * @param {String} status - The test status to push to JIRA
 	 * @param {Array[String]} comment - The error output from the test
 	 ****************************************************************************/
-	static updateStep(stepId, status, comment) {
+	static updateStep(step, testNum, status, comment) {
 		return new Promise((resolve, reject) => {
+			let
+				stepId,
+				created = true;
+
+			if (step[testNum - 1]) {
+				stepId = step[testNum - 1].id;
+			} else {
+				stepId = testNum;
+				created = false;
+			}
+
 			Output.info(`Update Test Step ${stepId}... `);
 
-			if (!global.update) {
+			if (!global.update || !created) {
 				Output.skip(resolve, null);
 			} else {
 				Promise.resolve()
@@ -102,18 +115,24 @@ class Zephyr_Helper {
 	 * calls
 	 *
 	 * @param {String} appcSDK - The SDK version desired for testing
+	 * @param {String} appcCLI - The CLI version desired for testing
 	 ****************************************************************************/
-	static getCycleId(appcSDK) {
+	static getCycleId(appcSDK, appcCLI) {
 		return new Promise((resolve, reject) => {
 			Output.info('Retreiving Zephyr Test Cycle ID... ');
 
 			if (!global.update) {
 				Output.skip(resolve, null);
 			} else {
+				if (appcCLI === 'latest') {
+					appcCLI = JSON.parse(exec('appc info -o json')).appcCLI.corepackage.version;
+				}
+
 				const
 					sdkVersion = appcSDK.split('.').slice(0, 3).join('.'),
+					cliVersion = appcCLI.split('.').slice(0, 3).join('.'),
 					release = `Release ${sdkVersion}`,
-					cycleName = `Appium SDK ${sdkVersion} GA & 7.0.5 Core Release Smoke Tests`;
+					cycleName = `Appium SDK ${sdkVersion} GA & ${cliVersion} Core Release Smoke Tests`;
 
 				let
 					cycleId,

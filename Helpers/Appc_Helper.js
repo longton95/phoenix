@@ -5,11 +5,135 @@ const
 	fs = require('fs-extra'),
 	spawn = require('child_process').spawn,
 	Output = require('./Output_Helper.js'),
+	exec = require('child_process').execSync,
 	app = require('../Config/Test_Config.js').app,
 	mod = require('../Config/Test_Config.js').mod,
 	appc = require('../Config/Credentials.js').appc;
 
 class Appc_Helper {
+	/*****************************************************************************
+	 * Take the passed SDK, and attempt to install it. If it is a straight defined
+	 * SDK, then install it. Otherwise if it is a branch, get the latest version
+	 * of it
+	 *
+	 * @param {String} requestedSDK - The SDK version desired for testing
+	 ****************************************************************************/
+	static installSDK(requestedSDK) {
+		return new Promise((resolve, reject) => {
+			let
+				sdk,
+				cmd = 'appc',
+				args = [ 'ti', 'sdk', 'install', '-b', requestedSDK, '-d', '--no-prompt', '--username', appc.username, '--password', appc.password ],
+				error = false;
+
+			let
+				foundStr,
+				installStr = /Titanium SDK \w+\.\w+\.\w+\.\w+ successfully installed!/;
+
+			if ((requestedSDK.split('.')).length > 1) {
+				Output.info(`Installing Titanium SDK '${requestedSDK}'... `);
+
+				foundStr = /Titanium SDK \w+\.\w+\.\w+\.\w+ is already installed!/;
+
+				// Remove the branch flag if downloading a specific SDK
+				let index = args.indexOf(args.find(element => element === '-b'));
+
+				args.splice(index, 1);
+			} else {
+				Output.info(`Installing Titanium SDK From '${requestedSDK}'... `);
+
+				foundStr = /You're up-to-date\. Version \w+\.\w+\.\w+\.\w+ is currently the newest version available\./;
+			}
+
+			const prc = spawn(cmd, args);
+			prc.stdout.on('data', data => {
+				Output.debug(data, 'debug');
+				if (data.toString().match(installStr)) {
+					sdk = data.toString().match(/\w+\.\w+\.\w+\.\w+/)[0];
+				}
+				if (data.toString().match(foundStr)) {
+					sdk = data.toString().match(/\w+\.\w+\.\w+\.\w+/)[0];
+				}
+			});
+			prc.stderr.on('data', data => {
+				Output.debug(data, 'debug');
+				// Appc CLI doesn't provide an error code on fail, so need to monitor the output and look for issues manully
+				// If statement is there so that [WARN] flags are ignored on stderr
+				if (data.toString().includes('[ERROR]')) {
+					error = true;
+				}
+			});
+			prc.on('exit', code => {
+				if (code !== 0 || error === true) {
+					reject('Error installing Titanium SDK');
+				} else {
+					// If the SDK was already installed, the -d flag will have been ignored
+					exec(`appc ti sdk select ${sdk}`);
+
+					Output.finish(resolve, sdk);
+				}
+			});
+		});
+	}
+
+	/*****************************************************************************
+	 * Install the latest version of the required CLI version for testing
+	 *
+	 * @param {String} version - The CLI version being tested
+	 ****************************************************************************/
+	static async installCLI(version) {
+		Output.info(`Installing CLI Version '${version}'... `);
+		try {
+			exec(`appc use ${version}`, {
+				stdio: [ 0 ]
+			});
+		} catch (err) {
+			if (err.toString().includes(`The version specified ${version} was not found`)) {
+				// Go to the pre-production environment
+				Output.log('Logging Out of the Appc CLI');
+				exec('appc logout');
+
+				Output.log('Setting Environment to PreProduction');
+				exec('appc config set defaultEnvironment preproduction');
+
+				Output.log('Logging In');
+				exec(`APPC_ENV=preproduction appc login --no-prompt --username ${appc.username} --password ${appc.password}`);
+
+				// Check if the CLI version we want to use is installed
+				Output.log(`Checking if the Latest Version of ${version} is Installed`);
+				const
+					clis = JSON.parse(exec('appc use -o json --prerelease')),
+					latest = clis.versions.find(element => element.includes(version)),
+					installed = clis.installed.includes(latest);
+
+				if (!latest) {
+					throw (new Error(`No Version Found For CLI ${version}`));
+				}
+
+				// If not, install it and set it as default
+				if (installed) {
+					Output.log(`Latest Already Installed, Selecting ${latest}`);
+				} else {
+					Output.log(`Latest Not Installed, Downloading ${latest}`);
+				}
+
+				exec(`appc use ${latest}`);
+
+				// Return to the production environment
+				Output.log('Logging Out of the Appc CLI');
+				exec('appc logout');
+
+				Output.log('Setting Environment to Production');
+				exec('appc config set defaultEnvironment production');
+
+				Output.log('Logging In');
+				exec(`APPC_ENV=production appc login --no-prompt --username ${appc.username} --password ${appc.password}`);
+			}
+		}
+
+		Output.finish();
+	}
+
 	/*****************************************************************************
 	 * Creates the application
 	 *
