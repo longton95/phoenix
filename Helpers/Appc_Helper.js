@@ -3,12 +3,15 @@
 const
 	path = require('path'),
 	fs = require('fs-extra'),
+	exec = require('child_process').execSync,
 	spawn = require('child_process').spawn,
 	Output = require('./Output_Helper.js'),
 	exec = require('child_process').execSync,
 	app = require('../Config/Test_Config.js').app,
 	mod = require('../Config/Test_Config.js').mod,
-	appc = require('../Config/Credentials.js').appc;
+	iOS = require('../Config/Test_Config.js').ios,
+	appc = require('../Config/Credentials.js').appc,
+	Android = require('../Config/Test_Config.js').android;
 
 class Appc_Helper {
 	/*****************************************************************************
@@ -146,7 +149,7 @@ class Appc_Helper {
 			Output.info('Generating New App... ');
 
 			const
-				rootPath = genRootPath('App'),
+				rootPath = this.genRootPath('App'),
 				logFile = path.join(rootPath, '..', 'appc_new.log');
 
 			let
@@ -186,7 +189,7 @@ class Appc_Helper {
 			Output.info('Generating New Module... ');
 
 			const
-				rootPath = genRootPath('Module'),
+				rootPath = this.genRootPath('Module'),
 				logFile = path.join(rootPath, '..', 'appc_new.log');
 
 			let
@@ -219,7 +222,7 @@ class Appc_Helper {
 	 ****************************************************************************/
 	static checkGeneratedApp() {
 		const
-			rootPath = genRootPath('App'),
+			rootPath = this.genRootPath('App'),
 			logPath = path.join(rootPath, '..', 'appc_new.log');
 
 		if (fs.existsSync(logPath)) {
@@ -238,7 +241,7 @@ class Appc_Helper {
 	 ****************************************************************************/
 	static checkGeneratedModule() {
 		const
-			rootPath = genRootPath('Module'),
+			rootPath = this.genRootPath('Module'),
 			logPath = path.join(rootPath, '..', 'appc_new.log');
 
 		if (fs.existsSync(logPath)) {
@@ -265,7 +268,7 @@ class Appc_Helper {
 			Output.info('Building Application... ');
 
 			let error = false,
-				rootPath = genRootPath('App');
+				rootPath = this.genRootPath('App');
 
 			let
 				cmd = 'appc',
@@ -288,6 +291,49 @@ class Appc_Helper {
 	}
 
 	/*****************************************************************************
+	 * Builds the application with liveview enabled
+	 ****************************************************************************/
+	static buildLiveviewApp() {
+		return new Promise((resolve, reject) => {
+			Output.info('Building Application... ');
+
+			let rootPath = this.genRootPath('App');
+
+			let
+				cmd = 'appc',
+				args = [ 'run', '--platform', global.platformOS.toLowerCase(), '-d', rootPath, '-f', '--no-prompt', '--liveview' ];
+
+			if (global.platformOS === 'iOS') {
+				let simUDID = exec(`instruments -s devices | grep "${iOS.deviceName} (${iOS.platVersion}) \\["`).toString().match(/\w{8}-\w{4}-\w{4}-\w{4}-\w{12}/)[0];
+				args.push('-C', simUDID, '-I', iOS.platVersion);
+			}
+			if (global.platformOS === 'Android') {
+				args.push('-C', Android.deviceName, '--deploy-type', 'development');
+			}
+
+			const prc = spawn(cmd, args);
+			prc.stdout.on('data', data => {
+				Output.debug(data, 'debug');
+				const line = data.toString().trim();
+
+				const
+					regStr = 'Client connected',
+					isLaunched = new RegExp(regStr, 'g').test(line);
+
+				if (isLaunched) {
+					Output.finish(resolve, null);
+				}
+			});
+			prc.stderr.on('data', data => {
+				Output.debug(data, 'debug');
+			});
+			prc.on('exit', code => {
+				reject('Failed on application build')
+			});
+		});
+	}
+
+	/*****************************************************************************
 	 * Builds the required Module
 	 ****************************************************************************/
 	static buildModule() {
@@ -296,7 +342,7 @@ class Appc_Helper {
 
 			let
 				error = false,
-				rootPath = path.join(genRootPath('Module'), global.platformOS.toLowerCase());
+				rootPath = path.join(this.genRootPath('Module'), global.platformOS.toLowerCase());
 
 			let
 				cmd = 'appc',
@@ -336,7 +382,7 @@ class Appc_Helper {
 
 		let
 			appPath = this.genAppPath(),
-			rootPath = genRootPath('App'),
+			rootPath = this.genRootPath('App'),
 			logPath = path.join(rootPath, 'build', `build_${log}.log`);
 
 		if (fs.existsSync(appPath) && fs.existsSync(logPath)) {
@@ -365,7 +411,7 @@ class Appc_Helper {
 		let platform = global.platformOS.toLowerCase();
 
 		const
-			rootPath = genRootPath('Module'),
+			rootPath = this.genRootPath('Module'),
 			zipPath = (platform === 'ios') ? path.join(rootPath, platform, 'dist', `${mod.packageName}-iphone-1.0.0.zip`) : path.join(rootPath, platform, 'dist', `${mod.packageName}-${platform}-1.0.0.zip`);
 
 		return fs.existsSync(zipPath);
@@ -377,7 +423,7 @@ class Appc_Helper {
 	static genAppPath() {
 		let
 			appPath,
-			rootPath = genRootPath('App');
+			rootPath = this.genRootPath('App');
 
 		if (global.platformOS === 'iOS') {
 			appPath = path.join(rootPath, 'build', 'iphone', 'build', 'Products', 'Debug-iphonesimulator', `${app.name}.app`);
@@ -387,21 +433,21 @@ class Appc_Helper {
 
 		return appPath;
 	}
-}
 
-/*******************************************************************************
- * Generate a path to the root of the application directory
- ******************************************************************************/
-function genRootPath(type) {
-	let file;
+	/*******************************************************************************
+	 * Generate a path to the root of the application directory
+	 ******************************************************************************/
+	static genRootPath(type) {
+		let file;
 
-	if (type === 'App') {
-		file = app.name;
-	} else if (type === 'Module') {
-		file = mod.name;
+		if (type === 'App') {
+			file = app.name;
+		} else if (type === 'Module') {
+			file = mod.name;
+		}
+
+		return path.join(global.projRoot, 'Build', `${global.hostOS}-${global.platformOS}`, type, file);
 	}
-
-	return path.join(global.projRoot, 'Build', `${global.hostOS}-${global.platformOS}`, type, file);
 }
 
 module.exports = Appc_Helper;

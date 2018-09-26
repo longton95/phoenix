@@ -7,10 +7,6 @@ const
 	capabilities = require('../../Config/Test_Config.js').android;
 
 describe('Simulator Test', () => {
-	after(async () => {
-		await Appium.stopClient();
-	});
-
 	before(async () => {
 		await Appium.startClient({
 			app: Appc.genAppPath(),

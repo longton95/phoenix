@@ -46,7 +46,11 @@ class Appium_Helper {
 
 			// If we're running an Android Emulator, launch it now, as this isn't handled by Appium
 			if (cap.platformName === 'Android') {
-				global.androidPID = await Device.launchEmu(cap.deviceName);
+				try {
+					global.androidPID = await Device.launchEmu(cap.deviceName);
+				} catch (error) {
+					Output.error(error);
+				}
 			}
 
 			driver.init(cap, err => {
