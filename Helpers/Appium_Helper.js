@@ -5,6 +5,7 @@ const
 	wd = require('wd'),
 	chai = require('chai'),
 	path = require('path'),
+	Appc = require('./Appc_Helper.js'),
 	spawn = require('child_process').spawn,
 	Device = require('./Device_Helper.js'),
 	Output = require('./Output_Helper.js'),
@@ -17,9 +18,35 @@ class Appium_Helper {
 	 *
 	 * @param {String} platform - The platform that is about to be launched
 	 ****************************************************************************/
-	static startClient(cap) {
+	static startClient(platform) {
 		return new Promise(async (resolve, reject) => {
 			Output.info('Starting WebDriver Instance... ');
+
+			let capabilities;
+
+			switch (platform) {
+				case 'android':
+					capabilities = require('../Config/Test_Config.js').android;
+					break;
+
+				case 'genymotion':
+					capabilities = require('../Config/Test_Config.js').genymotion;
+					break;
+
+				default:
+					capabilities = require('../Config/Test_Config.js').ios;
+					break;
+			}
+
+			let cap = {
+				app: Appc.genAppPath(),
+				platformName: capabilities.platform,
+				platformVersion: capabilities.platVersion,
+				deviceName: capabilities.deviceName,
+				appPackage: capabilities.appPackage,
+				appActivity: capabilities.appActivity
+			};
+
 			// Retreive the server properties
 			const server = global.server;
 
@@ -39,6 +66,7 @@ class Appium_Helper {
 			if (cap.platformName === 'iOS') {
 				cap.automationName = 'XCUITest';
 			} else if (cap.platformName === 'Android') {
+				cap.deviceReadyTimeout = 60;
 				cap.automationName = 'Appium';
 			}
 
@@ -47,7 +75,7 @@ class Appium_Helper {
 			// If we're running an Android Emulator, launch it now, as this isn't handled by Appium
 			if (cap.platformName === 'Android') {
 				try {
-					global.androidPID = await Device.launchEmu(cap.deviceName);
+					(platform === 'android') ? await Device.launchEmu(cap.deviceName) : await Device.launchGeny(cap.deviceName);
 				} catch (error) {
 					Output.error(error);
 				}
@@ -72,11 +100,7 @@ class Appium_Helper {
 		const driver = global.driver;
 
 		if (driver) {
-			const
-				capabilities = await driver.sessionCapabilities(),
-				platform = capabilities.platformName;
-
-			switch (platform) {
+			switch (global.platformOS) {
 				case 'iOS':
 					await driver.closeApp();
 					await driver.quit();

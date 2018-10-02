@@ -2,13 +2,14 @@
 
 const
 	os = require('os'),
+	path = require('path'),
 	spawn = require('child_process').spawn,
 	Output = require('./Output_Helper.js'),
 	exec = require('child_process').execSync;
 
 class Device_Helper {
 	/*****************************************************************************
-	 * Launch the emulator specified in the device_config.js for the current test
+	 * Launch the emulator specified in the Test_Config.js for the current test
 	 *
 	 * @param {String} devName - The name of the AVD emulator used for testing
 	 ****************************************************************************/
@@ -23,9 +24,12 @@ class Device_Helper {
 				args = [ '-avd', devName, '-skin', '1080x1920', '-logcat', '*:v', '-no-snapshot-save', '-no-snapshot-load', '-no-boot-anim', '-memory', specs.mem, '-cores', specs.cpu, '-accel', 'auto', '-wipe-data', '-partition-size', '4096' ];
 
 			const prc = spawn(cmd, args);
+
+			global.androidPID = prc.pid;
+
 			prc.stdout.on('data', data => {
 				if (data.toString().includes('Boot is finished')) {
-					return Output.finish(resolve, prc.pid);
+					return Output.finish(resolve, null);
 				}
 			});
 
@@ -36,22 +40,46 @@ class Device_Helper {
 	}
 
 	/*****************************************************************************
-	 * Use the PID of the emulator to kill it
+	 * Kill any active Android devices
 	 *
-	 * @param {String} pid - The process ID to terminate
+	 * FIXME: Add Windows support to this function
 	 ****************************************************************************/
-	static killEmu() {
+	static async killEmu() {
+		if (global.androidPID) {
+			await exec(`kill -9 ${global.androidPID}`, {
+				stdio: [ 0 ]
+			});
+			delete global.androidPID;
+		}
+
+		if (global.genymotionPID) {
+			await exec(`kill -9 ${global.genymotionPID}`, {
+				stdio: [ 0 ]
+			});
+			delete global.genymotionPID;
+		}
+	}
+
+	/*****************************************************************************
+	 * Launch a Genymotion device to run tests on. The name is retrieved from the
+	 * Test_Config.js file
+	 *
+	 * @param {String} devName - The name of the Genymotion emulator used for
+	 *													 testing
+	 ****************************************************************************/
+	static launchGeny(devName) {
 		return new Promise(resolve => {
-			Output.info('Shutting Down the Android Emulator... ');
+			Output.info(`Booting Genymotion Emulator '${devName}'`);
 
-			if (global.androidPID) {
-				// TODO: Add a Windows method for ending the emulator
-				exec(`kill -9 ${global.androidPID}`);
+			const
+				cmd = (global.hostOS === 'Mac') ? path.join('/', 'Applications', 'Genymotion.app', 'Contents', 'MacOS', 'player.app', 'Contents', 'MacOS', 'player') : path.join(), // TODO: Find Windows path to player
+				args = [ '--vm-name', devName ];
 
-				delete global.androidPID;
-			}
+			const prc = spawn(cmd, args);
 
-			Output.finish(resolve, null);
+			global.genymotionPID = prc.pid;
+
+			resolve();
 		});
 	}
 
@@ -74,11 +102,16 @@ class Device_Helper {
 
 	/*****************************************************************************
 	 * Kill all the test simulators and emulators in the event of SIGINT.
+	 *
+	 * FIXME: Add Windows support to this function
 	 ****************************************************************************/
 	static quickKill() {
 		console.log();
-		spawn('xcrun', [ 'simctl', 'shutdown', 'booted' ]);
-		spawn('killall', [ '-9', 'qemu-system-i386' ]);
+		if (global.hostOS === 'Mac') {
+			spawn('xcrun', [ 'simctl', 'shutdown', 'booted' ]);
+		}
+
+		this.killEmu();
 	}
 }
 

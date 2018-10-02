@@ -7,6 +7,7 @@ const
 	Mocha = require('../Helpers/Mocha_Helper.js'),
 	Output = require('../Helpers/Output_Helper.js'),
 	Appium = require('../Helpers/Appium_Helper.js'),
+	Device = require('../Helpers/Device_Helper.js'),
 	Zephyr = require('../Helpers/Zephyr_Helper.js'),
 	WebDriver = require('../Helpers/WebDriver_Helper.js');
 
@@ -61,6 +62,7 @@ Output.setupLogDir(err => {
 // TODO: Cater for new SIGINT requirements
 // If the process is killed in the console, force close all test devices
 process.on('SIGINT', () => {
+	Device.quickKill();
 	process.exit();
 });
 

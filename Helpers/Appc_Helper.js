@@ -3,7 +3,6 @@
 const
 	path = require('path'),
 	fs = require('fs-extra'),
-	exec = require('child_process').execSync,
 	spawn = require('child_process').spawn,
 	Output = require('./Output_Helper.js'),
 	exec = require('child_process').execSync,
@@ -328,7 +327,7 @@ class Appc_Helper {
 				Output.debug(data, 'debug');
 			});
 			prc.on('exit', code => {
-				reject('Failed on application build')
+				reject('Failed on application build');
 			});
 		});
 	}
