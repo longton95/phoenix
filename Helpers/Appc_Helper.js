@@ -3,14 +3,20 @@
 const
 	path = require('path'),
 	fs = require('fs-extra'),
+	ioslib = require('ioslib'),
+	exec = require('child_process').execSync,
 	spawn = require('child_process').spawn,
 	Output = require('./Output_Helper.js'),
-	exec = require('child_process').execSync,
-	app = require('../Config/Test_Config.js').app,
-	mod = require('../Config/Test_Config.js').mod,
-	iOS = require('../Config/Test_Config.js').ios,
-	appc = require('../Config/Credentials.js').appc,
-	Android = require('../Config/Test_Config.js').android;
+	testConf = require('../Config/Test_Config.js'),
+	credentials = require('../Config/credentials.js');
+
+const
+	app = testConf.app,
+	mod = testConf.mod,
+	iOS = testConf.ios,
+	Android = testConf.android,
+	appc = credentials.appc,
+	keystore = credentials.keystore;
 
 class Appc_Helper {
 	/*****************************************************************************
@@ -25,7 +31,7 @@ class Appc_Helper {
 			let
 				sdk,
 				cmd = 'appc',
-				args = [ 'ti', 'sdk', 'install', '-b', requestedSDK, '-d', '--no-prompt', '--username', appc.username, '--password', appc.password ],
+				args = [ 'ti', 'sdk', 'install', '-b', requestedSDK, '-d', '--no-prompt', '--username', appc.username, '--password', appc.password, '-O', appc.org ],
 				error = false;
 
 			let
@@ -59,7 +65,7 @@ class Appc_Helper {
 			});
 			prc.stderr.on('data', data => {
 				Output.debug(data, 'debug');
-				// Appc CLI doesn't provide an error code on fail, so need to monitor the output and look for issues manully
+				// Appc CLI doesn't provide an error code on fail, so need to monitor the output and look for issues manually
 				// If statement is there so that [WARN] flags are ignored on stderr
 				if (data.toString().includes('[ERROR]')) {
 					error = true;
@@ -164,7 +170,7 @@ class Appc_Helper {
 			prc.stderr.on('data', data => {
 				Output.debug(data, 'debug');
 				fs.appendFileSync(logFile, data);
-				// Appc CLI doesn't provide an error code on fail, so need to monitor the output and look for issues manully
+				// Appc CLI doesn't provide an error code on fail, so need to monitor the output and look for issues manually
 				// If statement is there so that [WARN] flags are ignored on stderr
 				if (data.toString().includes('[ERROR]')) {
 					error = true;
@@ -204,7 +210,7 @@ class Appc_Helper {
 			prc.stderr.on('data', data => {
 				Output.debug(data, 'debug');
 				fs.appendFileSync(logFile, data);
-				// Appc CLI doesn't provide an error code on fail, so need to monitor the output and look for issues manully
+				// Appc CLI doesn't provide an error code on fail, so need to monitor the output and look for issues manually
 				// If statement is there so that [WARN] flags are ignored on stderr
 				if (data.toString().includes('[ERROR]')) {
 					error = true;
@@ -257,7 +263,7 @@ class Appc_Helper {
 	/*****************************************************************************
 	 * Builds the required application
 	 *
-	 * [FIXME]: Had to remove the error listner in the build step due to an error
+	 * [FIXME]: Had to remove the error listener in the build step due to an error
 	 *					being thrown for not having crash analytics enabled. Either remove
 	 *					it from the capability of all apps to be tested, or find a way to
 	 *					build with no services that doesn't throw an error at runtime.
@@ -279,7 +285,7 @@ class Appc_Helper {
 			});
 			prc.stderr.on('data', data => {
 				Output.debug(data, 'debug');
-				// Appc CLI doesn't provide an error code on fail, so need to monitor the output and look for issues manully
+				// Appc CLI doesn't provide an error code on fail, so need to monitor the output and look for issues manually
 				// If statement is there so that [WARN] flags are ignored on stderr
 				// if(data.toString().includes('[ERROR]')) error = true;
 			});
@@ -326,8 +332,90 @@ class Appc_Helper {
 			prc.stderr.on('data', data => {
 				Output.debug(data, 'debug');
 			});
-			prc.on('exit', code => {
+			prc.on('exit', () => {
 				reject('Failed on application build');
+			});
+		});
+	}
+
+	/*****************************************************************************
+ 	 * Packages the required application
+ 	 ****************************************************************************/
+	static packageApp(target) {
+		return new Promise(async (resolve, reject) => {
+			Output.info('Building Application... ');
+
+			let error = false,
+				storeBuild = true,
+				appPath = this.genRootPath('App'),
+				distPath = this.genRootPath('Package');
+
+			let
+				cmd = 'appc',
+				args = [ 'run', '--platform', global.platformOS.toLowerCase(), '-d', appPath, '--deploy-type', 'production', '--target', `dist-${target}` ];
+
+			if (global.platformOS === 'iOS') {
+				if (target === 'appstore') {
+					target = 'distribution';
+				} else {
+					storeBuild = false;
+					args.push('--output-dir', distPath);
+				}
+
+				let uuid,
+					distName;
+
+				let profiles = await ioslib.provisioning.getProvisioningProfiles();
+				for (const profile of profiles[target]) {
+					if (storeBuild && profile.name === 'Appiumtest') {
+						uuid = profile.uuid;
+						distName = `${profile.teamName} (${profile.teamId})`;
+						break;
+					} else if (!profile.expired) {
+						uuid = profile.uuid;
+						distName = `${profile.teamName} (${profile.teamId})`;
+					}
+				}
+				args.push(
+					'--distribution-name',
+					distName,
+					'--ios-version',
+					iOS.platVersion,
+					'--pp-uuid',
+					uuid
+				);
+			}
+			if (global.platformOS === 'Android') {
+				keystore.location = path.join(global.projRoot, 'Config', 'Support', keystore.name);
+
+				args.push(
+					'--output-dir',
+					distPath,
+					'--api-level',
+					app.apiLevel,
+					'--alias',
+					keystore.alias,
+					'--keystore',
+					keystore.location,
+					'--store-password',
+					keystore.password,
+					'--key-password',
+					keystore.password
+				);
+			}
+
+			const prc = spawn(cmd, args);
+			prc.stdout.on('data', data => {
+				Output.debug(data, 'debug');
+			});
+			prc.stderr.on('data', data => {
+				Output.debug(data, 'debug');
+				// Appc CLI doesn't provide an error code on fail, so need to monitor the output and look for issues manually
+				// If statement is there so that [WARN] flags are ignored on stderr
+				// if(data.toString().includes('[ERROR]')) error = true;
+			});
+			prc.on('exit', code => {
+				(code !== 0 || error === true) ? reject('Failed on application build') : Output.finish(resolve, null);
 			});
 		});
 	}
@@ -353,7 +441,7 @@ class Appc_Helper {
 			});
 			prc.stderr.on('data', data => {
 				Output.debug(data, 'debug');
-				// Appc CLI doesn't provide an error code on fail, so need to monitor the output and look for issues manully
+				// Appc CLI doesn't provide an error code on fail, so need to monitor the output and look for issues manually
 				// If statement is there so that [WARN] flags are ignored on stderr
 				// if(data.toString().includes('[ERROR]')) error = true;
 			});
@@ -366,7 +454,7 @@ class Appc_Helper {
 	/*****************************************************************************
 	 * See if there is already a built application in the application folder.
 	 * If one does exist, then check the build log to make sure that the last
-	 * build was succesful.
+	 * build was successful.
 	 ****************************************************************************/
 	static checkBuiltApp() {
 		let log;
@@ -400,6 +488,19 @@ class Appc_Helper {
 		} else {
 			return false;
 		}
+	}
+	/*****************************************************************************
+	 * See if there is already a built module in the module folder.
+	 * If one does exist, then check the module zip file has been generated.
+	 ****************************************************************************/
+	static checkPackagedApp() {
+		let platform = global.platformOS.toLowerCase();
+
+		const
+			rootPath = this.genRootPath('Package'),
+			packagedApp = (platform === 'ios') ? path.join(rootPath, `${app.name}.ipa`) : path.join(rootPath, `${app.name}.apk`);
+
+		return fs.existsSync(packagedApp);
 	}
 
 	/*****************************************************************************
@@ -443,6 +544,8 @@ class Appc_Helper {
 			file = app.name;
 		} else if (type === 'Module') {
 			file = mod.name;
+		} else if (type === 'Package') {
+			file = app.name;
 		}
 
 		return path.join(global.projRoot, 'Build', `${global.hostOS}-${global.platformOS}`, type, file);

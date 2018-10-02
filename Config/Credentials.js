@@ -15,3 +15,9 @@ exports.appc = {
 	username: process.env.APPCUSER,
 	password: process.env.APPCPASS
 };
+
+exports.keystore = {
+	name: 'AppiumTestKeystore',
+	alias: 'AppiumTest',
+	password: 'Monkeylord'
+};

@@ -10,8 +10,9 @@ exports.android = {
 	deviceName: 'android-23-x86',
 	platVersion: '6.0',
 	platform: 'Android',
-	appPackage: 'com.appium.appiumtest',
-	appActivity: '.AppiumtestActivity'
+	appPackage: 'com.appc.appiumtest',
+	appActivity: '.AppiumtestActivity',
+	apiLevel: '28'
 };
 
 exports.genymotion = {
@@ -24,12 +25,12 @@ exports.genymotion = {
 
 exports.app = {
 	name: 'AppiumTest',
-	packageName: 'com.appium.appiumtest'
+	packageName: 'com.appc.appiumtest'
 };
 
 exports.mod = {
 	name: 'appiumtestmodule',
-	packageName: 'com.appium.appiumtestmodule',
+	packageName: 'com.appc.appiumtestmodule',
 	version: '1.0',
 	author: 'appc',
 	copyright: 'Copyright Appcelerator',
