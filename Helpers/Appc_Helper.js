@@ -4,9 +4,9 @@ const
 	path = require('path'),
 	fs = require('fs-extra'),
 	ioslib = require('ioslib'),
-	exec = require('child_process').execSync,
 	spawn = require('child_process').spawn,
 	Output = require('./Output_Helper.js'),
+	exec = require('child_process').execSync,
 	testConf = require('../Config/Test_Config.js'),
 	credentials = require('../Config/credentials.js');
 

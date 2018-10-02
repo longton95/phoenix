@@ -43,7 +43,12 @@ class Mocha_Helper {
 					if (files.length === 0) {
 						resolve(tests);
 					}
-					let collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
+        
+					let collator = new Intl.Collator(undefined, {
+						numeric: true,
+						sensitivity: 'base'
+					});
+        
 					files.sort(collator.compare);
 					// Add all of the test files one by one
 					files.forEach(file => {
@@ -58,15 +63,14 @@ class Mocha_Helper {
 								// Attempt to pull the name of the ticket using the file path of the test
 								let
 									test,
-									ticket = data.title;
+									testNumber = parseInt(path.basename(data.file, '.js').split('.')[0], 10),
+									index = tests.indexOf(tests.find(x => x.testNum === testNumber));
 
 								if (data.pending === true) {
 									// If the test is to was skipped
 									Output.log(`${data.title}: Skipped`);
 									// Check if the ticket is already in the array
-									if (tests.includes(tests.find(x => x.name === ticket))) {
-										// Find the index of the ticket in the array
-										let index = tests.indexOf(tests.find(x => x.name === ticket));
+									if (index > 0) {
 										// Add the skip message onto the object
 										tests[index].errors.push(data.title.replace(/\\/g, '').replace(/"/g, '\''));
 									} else {
@@ -74,17 +78,15 @@ class Mocha_Helper {
 										test = {
 											state: 3,
 											name: data.title,
-											errors: [ data.title.replace(/\\/g, '').replace(/"/g, '\'') ],
-											testNum: parseInt(path.basename(data.file, '.js').split('.')[0], 10)
+											testNum: testNumber,
+											errors: [ data.title.replace(/\\/g, '').replace(/"/g, '\'') ]
 										};
 									}
 								} else if (data.state === 'passed') {
 									// Action for if the test passed
 									Output.log(`${data.title}: Passed`);
 									// Check if the ticket is already in the array
-									if (tests.includes(tests.find(x => x.name === ticket))) {
-										// Find the index of the ticket in the array
-										let index = tests.indexOf(tests.find(x => x.name === ticket));
+									if (index > 0) {
 										// Change the state of the test to a pass if it was previously skipped
 										if (tests[index].state === 3) {
 											tests[index].state = 1;
@@ -94,8 +96,8 @@ class Mocha_Helper {
 										test = {
 											state: 1,
 											name: data.title,
-											errors: [],
-											testNum: parseInt(path.basename(data.file, '.js').split('.')[0], 10)
+											testNum: testNumber,
+											errors: []
 										};
 									}
 								} else if (data.state === 'failed') {
@@ -105,9 +107,7 @@ class Mocha_Helper {
 									// Create a message to be attatched to the ticket
 									let failMessage = `[TEST STEP] ${data.title.replace(/"/g, '\'')}\\n[RESULT] ${data.err.message.replace(/\\/g, '').replace(/"/g, '\'')}`;
 									// Check if the ticket is already in the array
-									if (tests.includes(tests.find(x => x.name === ticket))) {
-										// Find the index of the ticket in the array
-										let index = tests.indexOf(tests.find(x => x.name === ticket));
+									if (index > 0) {
 										// Change the state of the test to a failure
 										tests[index].state = 2;
 										// Add the error into the array
@@ -117,8 +117,8 @@ class Mocha_Helper {
 										test = {
 											state: 2,
 											name: data.title,
-											errors: [ failMessage ],
-											testNum: parseInt(path.basename(data.file, '.js').split('.')[0], 10)
+											testNum: testNumber,
+											errors: [ failMessage ]
 										};
 									}
 								}

@@ -176,7 +176,7 @@ function getZephyr() {
 		}
 		const data = {
 			url: 'https://jira.appcelerator.org/rest/api/latest/search',
-			body: `{"jql":"project = TIMOB AND issuetype = Test AND text ~ 'Acceptance: Platform: ${global.hostOS} ${global.platformOS}${extraArgs}'"}`,
+			body: `{"jql":"project = TIMOB AND issuetype = Test AND text ~ 'Appium Acceptance: Platform: ${global.hostOS} ${global.platformOS}${extraArgs}'"}`,
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
