@@ -8,11 +8,13 @@ const
 	MochaFilter = require('mocha-filter')(global.filters),
 	WebDriverHelper = require('../../Helpers/WebDriver_Helper.js');
 
-const driver = global.studioDriver;
-
 describe('Liveview Test', () => {
 	after(async () => {
 		await Appium.stopClient();
+	});
+
+	before(async () => {
+		await Appium.startClient('android');
 	});
 
 	it('Check That the Text "Hello World" is Visible', async () => {

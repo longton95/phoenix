@@ -43,12 +43,12 @@ class Mocha_Helper {
 					if (files.length === 0) {
 						resolve(tests);
 					}
-        
+
 					let collator = new Intl.Collator(undefined, {
 						numeric: true,
 						sensitivity: 'base'
 					});
-        
+
 					files.sort(collator.compare);
 					// Add all of the test files one by one
 					files.forEach(file => {

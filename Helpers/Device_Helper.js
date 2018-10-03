@@ -15,27 +15,30 @@ class Device_Helper {
 	 ****************************************************************************/
 	static launchEmu(devName) {
 		return new Promise(resolve => {
-
 			Output.info(`Launching Android device '${devName}'... `);
 
-			const
-				specs = calcResources(),
-				cmd = `${process.env.ANDROID_HOME}/tools/emulator`,
-				args = [ '-avd', devName, '-skin', '1080x1920', '-logcat', '*:v', '-no-snapshot-save', '-no-snapshot-load', '-no-boot-anim', '-memory', specs.mem, '-cores', specs.cpu, '-accel', 'auto', '-wipe-data', '-partition-size', '4096' ];
+			if (global.androidPID || checkBooted(devName)) {
+				Output.skip(resolve, null);
+			} else {
+				const
+					specs = calcResources(),
+					cmd = `${process.env.ANDROID_HOME}/tools/emulator`,
+					args = [ '-avd', devName, '-skin', '1080x1920', '-logcat', '*:v', '-no-snapshot-save', '-no-snapshot-load', '-no-boot-anim', '-memory', specs.mem, '-cores', specs.cpu, '-accel', 'auto', '-wipe-data', '-partition-size', '4096' ];
 
-			const prc = spawn(cmd, args);
+				const prc = spawn(cmd, args);
 
-			global.androidPID = prc.pid;
+				global.androidPID = prc.pid;
 
-			prc.stdout.on('data', data => {
-				if (data.toString().includes('Boot is finished')) {
-					return Output.finish(resolve, null);
-				}
-			});
+				prc.stdout.on('data', data => {
+					if (data.toString().includes('Boot is finished')) {
+						return Output.finish(resolve, null);
+					}
+				});
 
-			prc.stderr.on('data', data => {
-				Output.debug(data.toString(), 'debug');
-			});
+				prc.stderr.on('data', data => {
+					Output.debug(data.toString(), 'debug');
+				});
+			}
 		});
 	}
 
@@ -58,6 +61,8 @@ class Device_Helper {
 			});
 			delete global.genymotionPID;
 		}
+
+		this.quickKill();
 	}
 
 	/*****************************************************************************
@@ -71,15 +76,19 @@ class Device_Helper {
 		return new Promise(resolve => {
 			Output.info(`Booting Genymotion Emulator '${devName}'`);
 
-			const
-				cmd = (global.hostOS === 'Mac') ? path.join('/', 'Applications', 'Genymotion.app', 'Contents', 'MacOS', 'player.app', 'Contents', 'MacOS', 'player') : path.join(), // TODO: Find Windows path to player
-				args = [ '--vm-name', devName ];
+			if (global.genymotionPID || checkBooted(devName)) {
+				Output.skip(resolve, null);
+			} else {
+				const
+					cmd = (global.hostOS === 'Mac') ? path.join('/', 'Applications', 'Genymotion.app', 'Contents', 'MacOS', 'player.app', 'Contents', 'MacOS', 'player') : path.join(), // TODO: Find Windows path to player
+					args = [ '--vm-name', devName ];
 
-			const prc = spawn(cmd, args);
+				const prc = spawn(cmd, args);
 
-			global.genymotionPID = prc.pid;
+				global.genymotionPID = prc.pid;
 
-			resolve();
+				resolve();
+			}
 		});
 	}
 
@@ -109,9 +118,29 @@ class Device_Helper {
 		console.log();
 		if (global.hostOS === 'Mac') {
 			spawn('xcrun', [ 'simctl', 'shutdown', 'booted' ]);
+			spawn('pkill', [ '-9', 'qemu-system-i386' ]);
+			spawn('pkill', [ '-9', 'player' ]);
 		}
+	}
+}
 
-		this.killEmu();
+/*******************************************************************************
+ * Validate to see if there is a process running for this emulator. Ideally we
+ * would like to use adb to verify this, but there is no link between the device
+ * name we use to boot the emulator, and the devices listed in adb
+ *
+ * @param {String} devName - The name of the Genymotion emulator used for
+ *													 testing
+ *
+ * FIXME: Add Windows support to this function
+ ******************************************************************************/
+function checkBooted(devName) {
+	if (global.hostOS === 'Mac') {
+		let output = exec(`ps -ef | grep ${devName}`).toString();
+
+		return (output.includes(`--vm-name ${devName}`) || output.includes(`-avd ${devName}`));
+	} else {
+		return false;
 	}
 }
 
