@@ -82,6 +82,7 @@ function generatePaths() {
 		let paths = [];
 
 		paths.push(path.join(projRoot, 'Logs'));
+		paths.push(path.join(projRoot, 'Build'));
 		paths.push(path.join(projRoot, 'Reports'));
 
 		resolve(paths);
