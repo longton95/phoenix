@@ -26,7 +26,7 @@ class Device_Helper {
 
 				global.androidPID = prc.pid;
 
-				checkBooted().then(() => {
+				checkBooted(devName).then(() => {
 					return Output.finish(resolve, null);
 				});
 			}
@@ -120,10 +120,11 @@ class Device_Helper {
 /*******************************************************************************
  * Validate to see if there is a process running for this emulator.
  ******************************************************************************/
-function checkBooted() {
+function checkBooted(devName) {
 	return new Promise((resolve) => {
+		let cmd = (devName === 'android-23-x86') ? 'adb -e shell getprop init.svc.bootanim' : 'adb -d shell getprop init.svc.bootanim';
 		const interval = setInterval(() => {
-			childProcess.exec('adb shell getprop init.svc.bootanim', function (error, stdout, stderr) {
+			childProcess.exec(cmd, function (error, stdout, stderr) {
 
 				if (stdout.toString().indexOf('stopped') > -1) {
 					clearInterval(interval);
