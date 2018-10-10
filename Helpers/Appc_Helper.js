@@ -53,7 +53,7 @@ class Appc_Helper {
 				foundStr = /You're up-to-date\. Version \w+\.\w+\.\w+\.\w+ is currently the newest version available\./;
 			}
 
-			const prc = spawn(cmd, args);
+			const prc = spawn(cmd, args, { shell: true });
 			prc.stdout.on('data', data => {
 				Output.debug(data, 'debug');
 				if (data.toString().match(installStr)) {
@@ -162,7 +162,7 @@ class Appc_Helper {
 				error = false,
 				args = [ 'new', '-n', app.name, '--id', app.packageName, '-t', 'app', '-d', rootPath, '-q', '--no-banner', '--no-prompt', '--username', appc.username, '--password', appc.password, '-O', appc.org ];
 
-			const prc = spawn(cmd, args);
+			const prc = spawn(cmd, args, { shell: true });
 			prc.stdout.on('data', data => {
 				Output.debug(data, 'debug');
 				fs.appendFileSync(logFile, data);
@@ -202,7 +202,7 @@ class Appc_Helper {
 				error = false,
 				args = [ 'new', '-n', mod.name, '--id', mod.packageName, '-t', 'timodule', '-d', rootPath, '-q', '--no-banner', '--no-prompt', '--username', appc.username, '--password', appc.password, '-O', appc.org ];
 
-			const prc = spawn(cmd, args);
+			const prc = spawn(cmd, args, { shell: true });
 			prc.stdout.on('data', data => {
 				Output.debug(data, 'debug');
 				fs.appendFileSync(logFile, data);
@@ -279,7 +279,7 @@ class Appc_Helper {
 				cmd = 'appc',
 				args = [ 'run', '--build-only', '--platform', global.platformOS.toLowerCase(), '-d', rootPath, '-f', '--no-prompt' ];
 
-			const prc = spawn(cmd, args);
+			const prc = spawn(cmd, args, { shell: true });
 			prc.stdout.on('data', data => {
 				Output.debug(data, 'debug');
 			});
@@ -316,7 +316,7 @@ class Appc_Helper {
 				args.push('-C', Android.deviceName, '--deploy-type', 'development');
 			}
 
-			const prc = spawn(cmd, args);
+			const prc = spawn(cmd, args, { shell: true });
 			prc.stdout.on('data', data => {
 				Output.debug(data, 'debug');
 				const line = data.toString().trim();
@@ -367,13 +367,17 @@ class Appc_Helper {
 
 				let profiles = await ioslib.provisioning.getProvisioningProfiles();
 				for (const profile of profiles[target]) {
-					if (storeBuild && profile.name === 'Appiumtest') {
-						uuid = profile.uuid;
-						distName = `${profile.teamName} (${profile.teamId})`;
-						break;
-					} else if (!profile.expired) {
-						uuid = profile.uuid;
-						distName = `${profile.teamName} (${profile.teamId})`;
+					if (!profile.expired) {
+						if (storeBuild && profile.name === 'AppiumTest') {
+							uuid = profile.uuid;
+							distName = `"${profile.teamName} (${profile.teamId})"`;
+							break;
+						} else if (!storeBuild) {
+							uuid = profile.uuid;
+							distName = `"${profile.teamName} (${profile.teamId})"`;
+						}
+					} else {
+						Output.warn(`The Profile "${profile.name}" has expired`);
 					}
 				}
 				args.push(
@@ -404,7 +408,7 @@ class Appc_Helper {
 				);
 			}
 
-			const prc = spawn(cmd, args);
+			const prc = spawn(cmd, args, { shell: true });
 			prc.stdout.on('data', data => {
 				Output.debug(data, 'debug');
 			});
@@ -435,7 +439,7 @@ class Appc_Helper {
 				cmd = 'appc',
 				args = [ 'run', '--build-only', '--platform', global.platformOS.toLowerCase(), '-d', rootPath, '-f', '--no-prompt' ];
 
-			const prc = spawn(cmd, args);
+			const prc = spawn(cmd, args, { shell: true });
 			prc.stdout.on('data', data => {
 				Output.debug(data, 'debug');
 			});

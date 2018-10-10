@@ -6,6 +6,7 @@
       "security/detect-new-buffer":"off",
       "spaced-comment":"off",
       "valid-jsdoc":"off",
-      "max-len":"off"
+      "max-len":"off",
+      "linebreak-style": 0
     }
 }

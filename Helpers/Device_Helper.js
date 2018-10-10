@@ -1,11 +1,9 @@
 'use strict';
 
 const
-	os = require('os'),
 	path = require('path'),
-	spawn = require('child_process').spawn,
-	Output = require('./Output_Helper.js'),
-	exec = require('child_process').execSync;
+	childProcess = require('child_process'),
+	Output = require('./Output_Helper.js');
 
 class Device_Helper {
 	/*****************************************************************************
@@ -17,26 +15,19 @@ class Device_Helper {
 		return new Promise(resolve => {
 			Output.info(`Launching Android device '${devName}'... `);
 
-			if (global.androidPID || checkBooted(devName)) {
+			if (global.androidPID) {
 				Output.skip(resolve, null);
 			} else {
 				const
-					specs = calcResources(),
-					cmd = `${process.env.ANDROID_HOME}/tools/emulator`,
-					args = [ '-avd', devName, '-skin', '1080x1920', '-logcat', '*:v', '-no-snapshot-save', '-no-snapshot-load', '-no-boot-anim', '-memory', specs.mem, '-cores', specs.cpu, '-accel', 'auto', '-wipe-data', '-partition-size', '4096' ];
+					cmd = path.join(process.env.ANDROID_HOME, 'emulator', 'emulator'),
+					args = [ '-avd', devName, '-wipe-data' ];
 
-				const prc = spawn(cmd, args);
+				const prc = childProcess.spawn(cmd, args);
 
 				global.androidPID = prc.pid;
 
-				prc.stdout.on('data', data => {
-					if (data.toString().includes('Boot is finished')) {
-						return Output.finish(resolve, null);
-					}
-				});
-
-				prc.stderr.on('data', data => {
-					Output.debug(data.toString(), 'debug');
+				checkBooted().then(() => {
+					return Output.finish(resolve, null);
 				});
 			}
 		});
@@ -44,19 +35,19 @@ class Device_Helper {
 
 	/*****************************************************************************
 	 * Kill any active Android devices
-	 *
-	 * FIXME: Add Windows support to this function
 	 ****************************************************************************/
 	static async killEmu() {
 		if (global.androidPID) {
-			await exec(`kill -9 ${global.androidPID}`, {
-				stdio: [ 0 ]
-			});
+			if (global.hostOS === 'Mac') {
+				await childProcess.execSync(`kill -9 ${global.androidPID}`, {
+					stdio: [ 0 ]
+				});
+			}
 			delete global.androidPID;
 		}
 
 		if (global.genymotionPID) {
-			await exec(`kill -9 ${global.genymotionPID}`, {
+			await childProcess.execSync(`kill -9 ${global.genymotionPID}`, {
 				stdio: [ 0 ]
 			});
 			delete global.genymotionPID;
@@ -76,14 +67,14 @@ class Device_Helper {
 		return new Promise(resolve => {
 			Output.info(`Booting Genymotion Emulator '${devName}'`);
 
-			if (global.genymotionPID || checkBooted(devName)) {
+			if (global.genymotionPID || checkBooted()) {
 				Output.skip(resolve, null);
 			} else {
 				const
 					cmd = (global.hostOS === 'Mac') ? path.join('/', 'Applications', 'Genymotion.app', 'Contents', 'MacOS', 'player.app', 'Contents', 'MacOS', 'player') : path.join(), // TODO: Find Windows path to player
 					args = [ '--vm-name', devName ];
 
-				const prc = spawn(cmd, args);
+				const prc = childProcess.spawn(cmd, args, { shell: true });
 
 				global.genymotionPID = prc.pid;
 
@@ -99,11 +90,11 @@ class Device_Helper {
 		return new Promise(resolve => {
 			Output.info('Shutting Down the iOS Simulator... ');
 
-			exec('xcrun simctl shutdown booted');
+			childProcess.execSync('xcrun simctl shutdown booted');
 
 			// Whilst the above does kill the simulator, it can leave processes running, so just nuke it after a period for safe shutdown
 			setTimeout(() => {
-				spawn('killall', [ 'Simulator' ]);
+				childProcess.spawn('killall', [ 'Simulator' ], { shell: true });
 				Output.finish(resolve, null);
 			}, 5000);
 		});
@@ -111,57 +102,44 @@ class Device_Helper {
 
 	/*****************************************************************************
 	 * Kill all the test simulators and emulators in the event of SIGINT.
-	 *
-	 * FIXME: Add Windows support to this function
 	 ****************************************************************************/
 	static quickKill() {
 		console.log();
 		if (global.hostOS === 'Mac') {
-			spawn('xcrun', [ 'simctl', 'shutdown', 'booted' ]);
-			spawn('pkill', [ '-9', 'qemu-system-i386' ]);
-			spawn('pkill', [ '-9', 'player' ]);
+			childProcess.spawn('xcrun', [ 'simctl', 'shutdown', 'booted' ]);
+			childProcess.spawn('pkill', [ '-9', 'qemu-system-i386' ]);
+			childProcess.spawn('pkill', [ '-9', 'player' ]);
+		}
+		if (global.hostOS === 'Windows') {
+			childProcess.spawn('tskill', [ 'qemu-system-i386' ]);
+			childProcess.spawn('tskill', [ 'player' ]);
 		}
 	}
 }
 
 /*******************************************************************************
- * Validate to see if there is a process running for this emulator. Ideally we
- * would like to use adb to verify this, but there is no link between the device
- * name we use to boot the emulator, and the devices listed in adb
- *
- * @param {String} devName - The name of the Genymotion emulator used for
- *													 testing
- *
- * FIXME: Add Windows support to this function
+ * Validate to see if there is a process running for this emulator.
  ******************************************************************************/
-function checkBooted(devName) {
-	if (global.hostOS === 'Mac') {
-		let output = exec(`ps -ef | grep ${devName}`).toString();
+function checkBooted() {
+	return new Promise((resolve) => {
+		const interval = setInterval(() => {
+			childProcess.exec('adb shell getprop init.svc.bootanim', function (error, stdout, stderr) {
 
-		return (output.includes(`--vm-name ${devName}`) || output.includes(`-avd ${devName}`));
-	} else {
-		return false;
-	}
-}
-
-/*******************************************************************************
- * Pick the Android specs based on host machine performance
- ******************************************************************************/
-function calcResources() {
-	let specs = {
-		cpu: 2,
-		mem: 2048
-	};
-
-	// If the resources are available, use them
-	if ((os.cpus().length) >= 8) {
-		specs.cpu = 4;
-	}
-	if ((((os.totalmem() / 1024) / 1024) / 1024) >= 8) {
-		specs.mem = 4096;
-	}
-
-	return specs;
+				if (stdout.toString().indexOf('stopped') > -1) {
+					clearInterval(interval);
+					resolve(true);
+				}
+				if (stderr) {
+					Output.error(stderr);
+				}
+				if (error) {
+					Output.error(error);
+				} else {
+					Output.info('Emulator still Booting');
+				}
+			});
+		}, 1000);
+	});
 }
 
 module.exports = Device_Helper;

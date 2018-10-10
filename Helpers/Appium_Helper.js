@@ -151,7 +151,7 @@ class Appium_Helper {
 					appiumExe = path.join(__dirname, '..', 'node_modules', '.bin', exe),
 					flags = [ '--log-no-colors', '-a', server.host, '-p', server.port, '--show-ios-log' ];
 
-				const appiumServer = spawn(appiumExe, flags);
+				const appiumServer = spawn(appiumExe, flags, { shell: true });
 
 				appiumServer.stdout.on('data', output => {
 					const line = output.toString().trim();
