@@ -4,20 +4,20 @@ const
 	Appium = require('../../Helpers/Appium_Helper.js'),
 	MochaFilter = require('mocha-filter')(global.filters);
 
-describe('Android Studio Emulator Test', () => {
+describe('iOS Device Test', () => {
 	after(async () => {
 		await Appium.stopClient();
 	});
 
 	before(async () => {
-		await Appium.startClient('emulator');
+		await Appium.startClient('iosDevice');
 	});
 
 	it('Click the "Hello World" Text in the App', async () => {
 		await global.driver
-			.elementByAndroidUIAutomator('new UiSelector().text("Hello, World")')
+			.elementById('Hello, World')
 			.click()
-			.elementByAndroidUIAutomator('new UiSelector().text("OK")')
+			.elementById('OK')
 			.isDisplayed().should.become(true);
 	});
 });
