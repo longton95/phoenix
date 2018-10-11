@@ -11,7 +11,7 @@ class Device_Helper {
 	 *
 	 * @param {String} devName - The name of the AVD emulator used for testing
 	 ****************************************************************************/
-	static launchEmu(devName) {
+	static launchEmu(devName, platform) {
 		return new Promise(resolve => {
 			Output.info(`Launching Android device '${devName}'... `);
 
@@ -26,7 +26,7 @@ class Device_Helper {
 
 				global.androidPID = prc.pid;
 
-				checkBooted().then(() => {
+				checkBooted(platform).then(() => {
 					return Output.finish(resolve, null);
 				});
 			}
@@ -63,11 +63,11 @@ class Device_Helper {
 	 * @param {String} devName - The name of the Genymotion emulator used for
 	 *													 testing
 	 ****************************************************************************/
-	static launchGeny(devName) {
+	static launchGeny(devName, platform) {
 		return new Promise(resolve => {
 			Output.info(`Booting Genymotion Emulator '${devName}'`);
 
-			if (global.genymotionPID || checkBooted()) {
+			if (global.genymotionPID) {
 				Output.skip(resolve, null);
 			} else {
 				const
@@ -78,7 +78,9 @@ class Device_Helper {
 
 				global.genymotionPID = prc.pid;
 
-				resolve();
+				checkBooted(platform).then(() => {
+					return Output.finish(resolve, null);
+				});
 			}
 		});
 	}
@@ -120,13 +122,15 @@ class Device_Helper {
 /*******************************************************************************
  * Validate to see if there is a process running for this emulator.
  ******************************************************************************/
-function checkBooted() {
+function checkBooted(platform) {
 	return new Promise((resolve) => {
+		let cmd = (platform === 'emulator' || platform === 'genymotion') ? 'adb -e shell getprop init.svc.bootanim' : 'adb -d shell getprop init.svc.bootanim';
 		const interval = setInterval(() => {
-			childProcess.exec('adb shell getprop init.svc.bootanim', function (error, stdout, stderr) {
+			childProcess.exec(cmd, function (error, stdout, stderr) {
 
 				if (stdout.toString().indexOf('stopped') > -1) {
 					clearInterval(interval);
+					Output.info(`${platform} Booted`);
 					resolve(true);
 				}
 				if (stderr) {
@@ -135,7 +139,7 @@ function checkBooted() {
 				if (error) {
 					Output.error(error);
 				} else {
-					Output.info('Emulator still Booting');
+					Output.info(`${platform} still Booting`);
 				}
 			});
 		}, 1000);

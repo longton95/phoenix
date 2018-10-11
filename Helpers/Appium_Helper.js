@@ -70,8 +70,6 @@ class Appium_Helper {
 			// Establish the testing driver
 			let driver = wd.promiseChainRemote(server);
 
-			global.platform = cap.platformName; // FIXME: Replace this global, as it's overwritten by each new session
-
 			// If running on a mobile platform, add an automation driver
 			if (cap.platformName === 'iOS') {
 				cap.automationName = 'XCUITest';
@@ -103,7 +101,7 @@ class Appium_Helper {
 			// If we're running an Android Emulator, launch it now, as this isn't handled by Appium
 			if (platform === 'emulator' || platform === 'genymotion') {
 				try {
-					(platform === 'emulator') ? await Device.launchEmu(cap.deviceName) : await Device.launchGeny(cap.deviceName);
+					(platform === 'emulator') ? await Device.launchEmu(cap.deviceName, platform) : await Device.launchGeny(cap.deviceName, platform);
 				} catch (error) {
 					Output.error(error);
 				}

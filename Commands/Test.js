@@ -24,8 +24,6 @@ program
 
 // If the user wants to push the results of the tests to Zephyr
 global.update = program.update;
-// A global placeholder for the current platform being tested
-global.platform = undefined;
 // Logging option for Output helper
 global.logging = program.logging;
 // The root of the project
