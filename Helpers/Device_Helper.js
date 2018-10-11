@@ -63,11 +63,11 @@ class Device_Helper {
 	 * @param {String} devName - The name of the Genymotion emulator used for
 	 *													 testing
 	 ****************************************************************************/
-	static launchGeny(devName) {
+	static launchGeny(devName, platform) {
 		return new Promise(resolve => {
 			Output.info(`Booting Genymotion Emulator '${devName}'`);
 
-			if (global.genymotionPID || checkBooted()) {
+			if (global.genymotionPID) {
 				Output.skip(resolve, null);
 			} else {
 				const
@@ -78,7 +78,9 @@ class Device_Helper {
 
 				global.genymotionPID = prc.pid;
 
-				resolve();
+				checkBooted(platform).then(() => {
+					return Output.finish(resolve, null);
+				});
 			}
 		});
 	}
@@ -122,7 +124,7 @@ class Device_Helper {
  ******************************************************************************/
 function checkBooted(platform) {
 	return new Promise((resolve) => {
-		let cmd = (platform === 'emulator') ? 'adb -e shell getprop init.svc.bootanim' : 'adb -d shell getprop init.svc.bootanim';
+		let cmd = (platform === 'emulator' || platform === 'genymotion') ? 'adb -e shell getprop init.svc.bootanim' : 'adb -d shell getprop init.svc.bootanim';
 		const interval = setInterval(() => {
 			childProcess.exec(cmd, function (error, stdout, stderr) {
 
