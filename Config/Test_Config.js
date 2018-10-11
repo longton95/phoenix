@@ -1,12 +1,29 @@
 'use strict';
 
-exports.ios = {
-	deviceName: 'iPhone 7',
+exports.iosDevice = {
+	platform: 'iOS',
 	platVersion: '12.0',
-	platform: 'iOS'
+	deviceName: 'GANDALF',
+	udid: process.env.IPHONEUDID
 };
 
-exports.android = {
+exports.simulator = {
+	platform: 'iOS',
+	platVersion: '12.0',
+	deviceName: 'iPhone 7'
+};
+
+exports.androidDevice = {
+	apiLevel: '28',
+	platform: 'Android',
+	platVersion: '8.0',
+	deviceName: 'Nexus 5X',
+	deviceId: process.env.ANDROIDID,
+	appPackage: 'com.appc.appiumtest',
+	appActivity: '.AppiumtestActivity'
+};
+
+exports.emulator = {
 	deviceName: 'android-23-x86',
 	platVersion: '6.0',
 	platform: 'Android',

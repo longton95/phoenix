@@ -5,10 +5,10 @@ const
 	Appc = require('../../Helpers/Appc_Helper.js'),
 	MochaFilter = require('mocha-filter')(global.filters);
 
-describe('Build App For Simulator', () => {
+describe('Build App For Device', () => {
 	it('Build the Application', async () => {
-		await Appc.buildApp('simulator');
+		await Appc.buildApp('iosDevice');
 
-		assert.equal(Appc.checkBuiltApp('simulator'), true);
+		assert.equal(Appc.checkBuiltApp('iosDevice'), true);
 	});
 });

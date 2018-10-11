@@ -11,12 +11,19 @@ const
 	credentials = require('../Config/credentials.js');
 
 const
+	appc = credentials.appc,
+
 	app = testConf.app,
 	mod = testConf.mod,
-	iOS = testConf.ios,
-	Android = testConf.android,
-	appc = credentials.appc,
-	keystore = credentials.keystore;
+	keystore = credentials.keystore,
+
+	testDevices = {
+		emulator: testConf.emulator,
+		simulator: testConf.simulator,
+		iosDevice: testConf.iosDevice,
+		genymotion: testConf.genymotion,
+		androidDevice: testConf.androidDevice
+	};
 
 class Appc_Helper {
 	/*****************************************************************************
@@ -53,7 +60,9 @@ class Appc_Helper {
 				foundStr = /You're up-to-date\. Version \w+\.\w+\.\w+\.\w+ is currently the newest version available\./;
 			}
 
-			const prc = spawn(cmd, args, { shell: true });
+			const prc = spawn(cmd, args, {
+				shell: true
+			});
 			prc.stdout.on('data', data => {
 				Output.debug(data, 'debug');
 				if (data.toString().match(installStr)) {
@@ -162,7 +171,9 @@ class Appc_Helper {
 				error = false,
 				args = [ 'new', '-n', app.name, '--id', app.packageName, '-t', 'app', '-d', rootPath, '-q', '--no-banner', '--no-prompt', '--username', appc.username, '--password', appc.password, '-O', appc.org ];
 
-			const prc = spawn(cmd, args, { shell: true });
+			const prc = spawn(cmd, args, {
+				shell: true
+			});
 			prc.stdout.on('data', data => {
 				Output.debug(data, 'debug');
 				fs.appendFileSync(logFile, data);
@@ -202,7 +213,9 @@ class Appc_Helper {
 				error = false,
 				args = [ 'new', '-n', mod.name, '--id', mod.packageName, '-t', 'timodule', '-d', rootPath, '-q', '--no-banner', '--no-prompt', '--username', appc.username, '--password', appc.password, '-O', appc.org ];
 
-			const prc = spawn(cmd, args, { shell: true });
+			const prc = spawn(cmd, args, {
+				shell: true
+			});
 			prc.stdout.on('data', data => {
 				Output.debug(data, 'debug');
 				fs.appendFileSync(logFile, data);
@@ -268,8 +281,8 @@ class Appc_Helper {
 	 *					it from the capability of all apps to be tested, or find a way to
 	 *					build with no services that doesn't throw an error at runtime.
 	 ****************************************************************************/
-	static buildApp() {
-		return new Promise((resolve, reject) => {
+	static buildApp(platform) {
+		return new Promise(async (resolve, reject) => {
 			Output.info('Building Application... ');
 
 			let error = false,
@@ -277,9 +290,29 @@ class Appc_Helper {
 
 			let
 				cmd = 'appc',
-				args = [ 'run', '--build-only', '--platform', global.platformOS.toLowerCase(), '-d', rootPath, '-f', '--no-prompt' ];
+				args = [ 'run', '--build-only', '--platform', global.platformOS.toLowerCase(), '-d', rootPath, '-f', '--no-prompt', '--username', appc.username, '--password', appc.password, '-O', appc.org ];
 
-			const prc = spawn(cmd, args, { shell: true });
+			switch (platform) {
+				case 'iosDevice':
+					args.push('-V', await getCert(), '-P', await getUUID());
+
+				case 'androidDevice':
+					args.push('-T', 'device');
+					break;
+
+				case 'simulator':
+					args.push('-T', 'simulator');
+					break;
+
+				case 'emulator':
+				case 'genymotion':
+					args.push('-T', 'emulator');
+					break;
+			}
+
+			const prc = spawn(cmd, args, {
+				shell: true
+			});
 			prc.stdout.on('data', data => {
 				Output.debug(data, 'debug');
 			});
@@ -298,31 +331,47 @@ class Appc_Helper {
 	/*****************************************************************************
 	 * Builds the application with liveview enabled
 	 ****************************************************************************/
-	static buildLiveviewApp() {
-		return new Promise((resolve, reject) => {
+	static buildLiveviewApp(platform) {
+		return new Promise(async (resolve, reject) => {
 			Output.info('Building Application... ');
 
 			let rootPath = this.genRootPath('App');
 
 			let
 				cmd = 'appc',
-				args = [ 'run', '--platform', global.platformOS.toLowerCase(), '-d', rootPath, '-f', '--no-prompt', '--liveview' ];
+				args = [ 'run', '--platform', global.platformOS.toLowerCase(), '-d', rootPath, '-f', '--no-prompt', '--liveview', '--username', appc.username, '--password', appc.password, '-O', appc.org ];
 
-			if (global.platformOS === 'iOS') {
-				let simUDID = exec(`instruments -s devices | grep "${iOS.deviceName} (${iOS.platVersion}) \\["`).toString().match(/\w{8}-\w{4}-\w{4}-\w{4}-\w{12}/)[0];
-				args.push('-C', simUDID, '-I', iOS.platVersion);
-			}
-			if (global.platformOS === 'Android') {
-				args.push('-C', Android.deviceName, '--deploy-type', 'development');
+			const testdevice = testDevices[platform];
+
+			switch (platform) {
+				case 'iosDevice':
+					args.push('-V', await getCert(), '-P', await getUUID(), '-T', 'device', '-C', testdevice.udid, '-I', testdevice.platVersion);
+					break;
+
+				case 'simulator':
+					let simUDID = exec(`instruments -s devices | grep "${testdevice.deviceName} (${testdevice.platVersion}) \\["`).toString().match(/\w{8}-\w{4}-\w{4}-\w{4}-\w{12}/)[0];
+					args.push('-T', 'simulator', '-C', simUDID, '-I', testdevice.platVersion);
+					break;
+
+				case 'androidDevice':
+					args.push('-T', 'device', '-C', testdevice.deviceId, '--deploy-type', 'development');
+					break;
+
+				case 'emulator':
+				case 'genymotion':
+					args.push('-T', 'emulator', '-C', testdevice.deviceName, '--deploy-type', 'development');
+					break;
 			}
 
-			const prc = spawn(cmd, args, { shell: true });
+			const prc = spawn(cmd, args, {
+				shell: true
+			});
 			prc.stdout.on('data', data => {
 				Output.debug(data, 'debug');
 				const line = data.toString().trim();
 
 				const
-					regStr = 'Client connected',
+					regStr = 'Client connected|Please manually launch the application or press CTRL-C to quit',
 					isLaunched = new RegExp(regStr, 'g').test(line);
 
 				if (isLaunched) {
@@ -339,8 +388,8 @@ class Appc_Helper {
 	}
 
 	/*****************************************************************************
- 	 * Packages the required application
- 	 ****************************************************************************/
+	 * Packages the required application
+	 ****************************************************************************/
 	static packageApp(target) {
 		return new Promise(async (resolve, reject) => {
 			Output.info('Building Application... ');
@@ -362,10 +411,12 @@ class Appc_Helper {
 					args.push('--output-dir', distPath);
 				}
 
-				let uuid,
+				let
+					uuid,
 					distName;
 
 				let profiles = await ioslib.provisioning.getProvisioningProfiles();
+
 				for (const profile of profiles[target]) {
 					if (!profile.expired) {
 						if (storeBuild && profile.name === 'AppiumTest') {
@@ -380,15 +431,17 @@ class Appc_Helper {
 						Output.warn(`The Profile "${profile.name}" has expired`);
 					}
 				}
+
 				args.push(
 					'--distribution-name',
 					distName,
 					'--ios-version',
-					iOS.platVersion,
+					testDevices.simulator.platVersion,
 					'--pp-uuid',
 					uuid
 				);
 			}
+
 			if (global.platformOS === 'Android') {
 				keystore.location = path.join(global.projRoot, 'Config', 'Support', keystore.name);
 
@@ -408,7 +461,9 @@ class Appc_Helper {
 				);
 			}
 
-			const prc = spawn(cmd, args, { shell: true });
+			const prc = spawn(cmd, args, {
+				shell: true
+			});
 			prc.stdout.on('data', data => {
 				Output.debug(data, 'debug');
 			});
@@ -439,7 +494,9 @@ class Appc_Helper {
 				cmd = 'appc',
 				args = [ 'run', '--build-only', '--platform', global.platformOS.toLowerCase(), '-d', rootPath, '-f', '--no-prompt' ];
 
-			const prc = spawn(cmd, args, { shell: true });
+			const prc = spawn(cmd, args, {
+				shell: true
+			});
 			prc.stdout.on('data', data => {
 				Output.debug(data, 'debug');
 			});
@@ -460,7 +517,7 @@ class Appc_Helper {
 	 * If one does exist, then check the build log to make sure that the last
 	 * build was successful.
 	 ****************************************************************************/
-	static checkBuiltApp() {
+	static checkBuiltApp(platform) {
 		let log;
 
 		if (global.platformOS === 'iOS') {
@@ -472,8 +529,8 @@ class Appc_Helper {
 		}
 
 		let
-			appPath = this.genAppPath(),
 			rootPath = this.genRootPath('App'),
+			appPath = this.genAppPath(platform),
 			logPath = path.join(rootPath, 'build', `build_${log}.log`);
 
 		if (fs.existsSync(appPath) && fs.existsSync(logPath)) {
@@ -524,23 +581,33 @@ class Appc_Helper {
 	/*****************************************************************************
 	 * Build a path to the location of the built app, dependant on platform
 	 ****************************************************************************/
-	static genAppPath() {
-		let
-			appPath,
-			rootPath = this.genRootPath('App');
+	static genAppPath(platform) {
+		const rootPath = this.genRootPath('App');
 
-		if (global.platformOS === 'iOS') {
-			appPath = path.join(rootPath, 'build', 'iphone', 'build', 'Products', 'Debug-iphonesimulator', `${app.name}.app`);
-		} else if (global.platformOS === 'Android') {
-			appPath = path.join(rootPath, 'build', 'android', 'bin', `${app.name}.apk`);
+		switch (platform) {
+			case 'iosDevice':
+				return path.join(rootPath, 'build', 'iphone', 'build', 'Products', 'Debug-iphoneos', `${app.name}.app`);
+
+			case 'simulator':
+				return path.join(rootPath, 'build', 'iphone', 'build', 'Products', 'Debug-iphonesimulator', `${app.name}.app`);
+
+			case 'androidDevice':
+			case 'emulator':
+			case 'genymotion':
+				return path.join(rootPath, 'build', 'android', 'bin', `${app.name}.apk`);
+
+			default:
+				if (global.platformOS === 'iOS') {
+					return path.join(rootPath, 'build', 'iphone', 'build', 'Products', 'Debug-iphonesimulator', `${app.name}.app`);
+				} else if (global.platformOS === 'Android') {
+					return path.join(rootPath, 'build', 'android', 'bin', `${app.name}.apk`);
+				}
 		}
-
-		return appPath;
 	}
 
-	/*******************************************************************************
+	/*****************************************************************************
 	 * Generate a path to the root of the application directory
-	 ******************************************************************************/
+	 ****************************************************************************/
 	static genRootPath(type) {
 		let file;
 
@@ -554,6 +621,40 @@ class Appc_Helper {
 
 		return path.join(global.projRoot, 'Build', `${global.hostOS}-${global.platformOS}`, type, file);
 	}
+}
+
+/*******************************************************************************
+ * Retrieve the name of the certificate for the QE Department
+ ******************************************************************************/
+async function getCert() {
+	let
+		certificate,
+		developerCerts = (await ioslib.certs.getCerts()).developer;
+
+	developerCerts.forEach(cert => {
+		if (cert.name.match(/QE Department \(\w{10}\)/)) {
+			certificate = `"${cert.name}"`;
+		}
+	});
+
+	return certificate;
+}
+
+/*******************************************************************************
+ * Retrieve the UUID of the app development provisioning profile
+ ******************************************************************************/
+async function getUUID() {
+	let
+		uuid,
+		provisioningProfiles = (await ioslib.provisioning.getProvisioningProfiles()).development;
+
+	provisioningProfiles.forEach(profile => {
+		if (profile.name === 'Any App Development') {
+			uuid = profile.uuid;
+		}
+	});
+
+	return uuid;
 }
 
 module.exports = Appc_Helper;
