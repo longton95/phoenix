@@ -11,7 +11,7 @@ class Device_Helper {
 	 *
 	 * @param {String} devName - The name of the AVD emulator used for testing
 	 ****************************************************************************/
-	static launchEmu(devName) {
+	static launchEmu(devName, platform) {
 		return new Promise(resolve => {
 			Output.info(`Launching Android device '${devName}'... `);
 
@@ -26,7 +26,7 @@ class Device_Helper {
 
 				global.androidPID = prc.pid;
 
-				checkBooted(devName).then(() => {
+				checkBooted(platform).then(() => {
 					return Output.finish(resolve, null);
 				});
 			}
@@ -120,14 +120,15 @@ class Device_Helper {
 /*******************************************************************************
  * Validate to see if there is a process running for this emulator.
  ******************************************************************************/
-function checkBooted(devName) {
+function checkBooted(platform) {
 	return new Promise((resolve) => {
-		let cmd = (devName === 'android-23-x86') ? 'adb -e shell getprop init.svc.bootanim' : 'adb -d shell getprop init.svc.bootanim';
+		let cmd = (platform === 'emulator') ? 'adb -e shell getprop init.svc.bootanim' : 'adb -d shell getprop init.svc.bootanim';
 		const interval = setInterval(() => {
 			childProcess.exec(cmd, function (error, stdout, stderr) {
 
 				if (stdout.toString().indexOf('stopped') > -1) {
 					clearInterval(interval);
+					Output.info(`${platform} Booted`);
 					resolve(true);
 				}
 				if (stderr) {
@@ -136,7 +137,7 @@ function checkBooted(devName) {
 				if (error) {
 					Output.error(error);
 				} else {
-					Output.info('Emulator still Booting');
+					Output.info(`${platform} still Booting`);
 				}
 			});
 		}, 1000);
