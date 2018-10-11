@@ -5,7 +5,7 @@
 const
 	path = require('path'),
 	fs = require('fs-extra'),
-	spawn = require('child_process').spawn,
+	calcSize = require('get-folder-size'),
 	Output = require('../Helpers/Output_Helper.js');
 
 let
@@ -33,24 +33,10 @@ Promise.resolve()
  ******************************************************************************/
 function getSize() {
 	return new Promise((resolve, reject) => {
-		let
-			sz,
-			cmd = 'du',
-			args = [ '-s', '-k', projRoot ];
-
-		const prc = spawn(cmd, args);
-
-		prc.stdout.on('data', data => {
-			sz = data.toString().split('/')[0];
-		});
-
-		prc.stderr.on('data', data => {
-			Output.error(data.toString());
-		});
-
-		prc.on('exit', code => {
-			(code === 0) ? resolve(sz) : reject(new Error(`${cmd} exited with ${code}`));
-		});
+		calcSize(projRoot, (err, size) => {
+			if (err) { reject(new Error(`exited with ${err}`)) }
+			resolve(size);
+		  });
 	});
 }
 
@@ -64,10 +50,11 @@ function getSize() {
  ******************************************************************************/
 function getDiff(start, final) {
 	return new Promise(resolve => {
-		const diff = Math.round((start - final) / 1000);
+		const diff = (start - final);
+		let removed = (diff / 1024 / 1024).toFixed(2)
 
 		console.log();
-		Output.info(`Clean Finished. Removed ${diff}Mb(s) of Data`);
+		Output.info(`Clean Finished. Removed ${removed}Mb(s) of Data`);
 
 		resolve();
 	});
