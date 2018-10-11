@@ -163,7 +163,7 @@ class Mocha_Helper {
 
 			tests.forEach(test => {
 				// Change the state to failed if there is a test that didn't pass
-				if (test.state !== 1) {
+				if (test.state === 2) {
 					overall = 2;
 				} else {
 					passing += 1;
