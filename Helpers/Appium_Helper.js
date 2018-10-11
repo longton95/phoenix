@@ -139,7 +139,7 @@ class Appium_Helper {
 				case 'Android':
 					await driver.closeApp();
 					await driver.quit();
-					await Device.killEmu();
+					await Device.quickKill();
 					break;
 
 				default:

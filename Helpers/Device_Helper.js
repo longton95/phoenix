@@ -34,29 +34,6 @@ class Device_Helper {
 	}
 
 	/*****************************************************************************
-	 * Kill any active Android devices
-	 ****************************************************************************/
-	static async killEmu() {
-		if (global.androidPID) {
-			if (global.hostOS === 'Mac') {
-				await childProcess.execSync(`kill -9 ${global.androidPID}`, {
-					stdio: [ 0 ]
-				});
-			}
-			delete global.androidPID;
-		}
-
-		if (global.genymotionPID) {
-			await childProcess.execSync(`kill -9 ${global.genymotionPID}`, {
-				stdio: [ 0 ]
-			});
-			delete global.genymotionPID;
-		}
-
-		this.quickKill();
-	}
-
-	/*****************************************************************************
 	 * Launch a Genymotion device to run tests on. The name is retrieved from the
 	 * Test_Config.js file
 	 *
@@ -96,7 +73,7 @@ class Device_Helper {
 
 			// Whilst the above does kill the simulator, it can leave processes running, so just nuke it after a period for safe shutdown
 			setTimeout(() => {
-				childProcess.spawn('killall', [ 'Simulator' ], { shell: true });
+				childProcess.spawn('killall', [ 'Simulator' ]);
 				Output.finish(resolve, null);
 			}, 5000);
 		});
@@ -106,7 +83,8 @@ class Device_Helper {
 	 * Kill all the test simulators and emulators in the event of SIGINT.
 	 ****************************************************************************/
 	static quickKill() {
-		console.log();
+		delete global.androidPID;
+		delete global.genymotionPID;
 		if (global.hostOS === 'Mac') {
 			childProcess.spawn('xcrun', [ 'simctl', 'shutdown', 'booted' ]);
 			childProcess.spawn('pkill', [ '-9', 'qemu-system-i386' ]);
