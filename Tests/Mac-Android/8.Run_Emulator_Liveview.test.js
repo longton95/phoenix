@@ -9,7 +9,7 @@ const
 
 describe('Liveview Test For Emulator', () => {
 	after(async () => {
-		await Appium.stopClient();
+		await Appium.stopClient('emulator');
 	});
 
 	before(async () => {

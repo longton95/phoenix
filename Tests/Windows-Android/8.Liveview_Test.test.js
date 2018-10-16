@@ -10,7 +10,7 @@ const
 
 describe('Liveview Test', () => {
 	after(async () => {
-		await Appium.stopClient();
+		await Appium.stopClient('android');
 	});
 
 	before(async () => {

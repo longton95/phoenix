@@ -8,7 +8,7 @@ const
 
 describe.skip('Genymotion Emulator Test', () => {
 	after(async () => {
-		await Appium.stopClient();
+		await Appium.stopClient('genymotion');
 	});
 
 	before(async () => {

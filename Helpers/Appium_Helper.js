@@ -10,6 +10,7 @@ const
 	spawn = require('child_process').spawn,
 	Device = require('./Device_Helper.js'),
 	Output = require('./Output_Helper.js'),
+	exec = require('child_process').execSync,
 	Webdriver = require('./Webdriver_Helper.js'),
 	chaiAsPromised = require('chai-as-promised');
 
@@ -24,41 +25,70 @@ class Appium_Helper {
 		return new Promise(async (resolve, reject) => {
 			Output.info('Starting WebDriver Instance... ');
 
-			let capabilities;
+			let
+				cap,
+				capabilities = require('../Config/Test_Config.js')[platform];
+
+			try {
+				cap = {
+					app: Appc.genAppPath(platform),
+					platformName: capabilities.platform,
+					platformVersion: capabilities.platVersion,
+					deviceName: capabilities.deviceName,
+					appPackage: capabilities.appPackage,
+					appActivity: capabilities.appActivity
+				};
+			} catch (err) {
+				// Do nothing
+			}
 
 			switch (platform) {
 				case 'iosDevice':
-					capabilities = require('../Config/Test_Config.js').iosDevice;
-					break;
+					let
+						xcodeOrg,
+						developerCerts = (await ioslib.certs.getCerts()).distribution;
+
+					developerCerts.forEach(cert => {
+						if (cert.name.match(/Michael Asher \(\w{10}\)/)) {
+							xcodeOrg = (cert.name.match(/\(\w{10}\)/)[0]).substr(1).slice(0, -1);
+						}
+					});
+
+					cap.xcodeOrgId = xcodeOrg;
+					cap.udid = capabilities.udid;
+					cap.xcodeSigningId = 'iPhone Developer';
+					cap.updatedWDABundleId = 'com.appc.webdriveragentrunner';
 
 				case 'simulator':
-					capabilities = require('../Config/Test_Config.js').simulator;
-					break;
-
-				case 'androidDevice':
-					capabilities = require('../Config/Test_Config.js').androidDevice;
+					cap.automationName = 'XCUITest';
 					break;
 
 				case 'emulator':
-					capabilities = require('../Config/Test_Config.js').emulator;
-					break;
+					if (platform === 'emulator') {
+						await Device.launchEmu(cap.deviceName, platform);
+					}
 
 				case 'genymotion':
-					capabilities = require('../Config/Test_Config.js').genymotion;
+					if (platform === 'genymotion') {
+						await Device.launchGeny(cap.deviceName, platform);
+					}
+
+				case 'androidDevice':
+					cap.deviceReadyTimeout = 60;
+					cap.automationName = 'Appium';
+					break;
+
+				case 'Mac':
+					cap = {
+						app: 'Xcode',
+						deviceName: 'Mac',
+						platformName: 'Mac'
+					};
 					break;
 			}
 
-			let cap = {
-				app: Appc.genAppPath(platform),
-				platformName: capabilities.platform,
-				platformVersion: capabilities.platVersion,
-				deviceName: capabilities.deviceName,
-				appPackage: capabilities.appPackage,
-				appActivity: capabilities.appActivity
-			};
-
-			// Retreive the server properties
-			const server = global.server;
+			// Sets the amount of time Appium waits before shutting down in the background
+			cap.newCommandTimeout = (60 * 10);
 
 			// Enabling chai assertion style: https://www.npmjs.com/package/chai-as-promised#node
 			chai.use(chaiAsPromised);
@@ -68,44 +98,7 @@ class Appium_Helper {
 			chaiAsPromised.transferPromiseness = wd.transferPromiseness;
 
 			// Establish the testing driver
-			let driver = wd.promiseChainRemote(server);
-
-			// If running on a mobile platform, add an automation driver
-			if (cap.platformName === 'iOS') {
-				cap.automationName = 'XCUITest';
-			} else if (cap.platformName === 'Android') {
-				cap.deviceReadyTimeout = 60;
-				cap.automationName = 'Appium';
-			}
-
-			cap.newCommandTimeout = (60 * 10); // Sets the amount of time Appium waits before shutting down in the background
-
-			// If we're to run on an actual iOS device, we need these details to ensure that wecan install the WebDriver agent
-			if (platform === 'iosDevice') {
-				let
-					xcodeOrg,
-					developerCerts = (await ioslib.certs.getCerts()).distribution;
-
-				developerCerts.forEach(cert => {
-					if (cert.name.match(/Michael Asher \(\w{10}\)/)) {
-						xcodeOrg = (cert.name.match(/\(\w{10}\)/)[0]).substr(1).slice(0, -1);
-					}
-				});
-
-				cap.xcodeOrgId = xcodeOrg;
-				cap.udid = capabilities.udid;
-				cap.xcodeSigningId = 'iPhone Developer';
-				cap.updatedWDABundleId = 'com.appc.webdriveragentrunner';
-			}
-
-			// If we're running an Android Emulator, launch it now, as this isn't handled by Appium
-			if (platform === 'emulator' || platform === 'genymotion') {
-				try {
-					(platform === 'emulator') ? await Device.launchEmu(cap.deviceName, platform) : await Device.launchGeny(cap.deviceName, platform);
-				} catch (error) {
-					Output.error(error);
-				}
-			}
+			let driver = wd.promiseChainRemote(global.server);
 
 			global.driver = driver;
 			global.webdriver = wd;
@@ -123,27 +116,36 @@ class Appium_Helper {
 	 * Stops the WD session, but first it closes and removes the app from the
 	 * device, to attempt to save storage space
 	 ****************************************************************************/
-	static async stopClient() {
+	static async stopClient(platform) {
 		Output.info('Stopping WebDriver Instance... ');
 
 		const driver = global.driver;
 
 		if (driver) {
-			switch (global.platformOS) {
-				case 'iOS':
+			switch (platform) {
+				case 'iosDevice':
+				case 'simulator':
 					await driver.closeApp();
 					await driver.quit();
 					await Device.killSim();
 					break;
 
-				case 'Android':
+				case 'androidDevice':
+				case 'genymotion':
+				case 'emulator':
 					await driver.closeApp();
 					await driver.quit();
 					await Device.quickKill();
 					break;
 
+				case 'Mac':
+					exec('pkill Xcode');
+					await driver.quit();
+					break;
+
 				default:
 					await driver.quit();
+					break;
 			}
 
 			delete global.driver;
@@ -215,7 +217,7 @@ class Appium_Helper {
 	 * Tells the Appium server to shut down
 	 ****************************************************************************/
 	static async quitServ() {
-		Output.info('Stopping Appium Servers... ');
+		Output.info('Stopping Appium Server... ');
 
 		if (global.appiumServer) {
 			await global.appiumServer.kill();

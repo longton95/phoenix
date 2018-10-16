@@ -6,7 +6,7 @@ const
 
 describe('iOS Simulator Test', () => {
 	after(async () => {
-		await Appium.stopClient();
+		await Appium.stopClient('simulator');
 	});
 
 	before(async () => {

@@ -6,7 +6,7 @@ const
 
 describe('Android Studio Emulator Test', () => {
 	after(async () => {
-		await Appium.stopClient();
+		await Appium.stopClient('emulator');
 	});
 
 	before(async () => {

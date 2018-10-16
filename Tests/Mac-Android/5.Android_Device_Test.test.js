@@ -6,7 +6,7 @@ const
 
 describe('Android Device Test', () => {
 	after(async () => {
-		await Appium.stopClient();
+		await Appium.stopClient('androidDevice');
 	});
 
 	before(async () => {
