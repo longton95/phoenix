@@ -116,8 +116,9 @@ class Zephyr_Helper {
 	 *
 	 * @param {String} appcSDK - The SDK version desired for testing
 	 * @param {String} appcCLI - The CLI version desired for testing
+	 * @param {String} release - The release type being tested
 	 ****************************************************************************/
-	static getCycleId(appcSDK, appcCLI) {
+	static getCycleId(appcSDK, appcCLI, releaseType) {
 		return new Promise((resolve, reject) => {
 			Output.info('Retreiving Zephyr Test Cycle ID... ');
 
@@ -132,7 +133,7 @@ class Zephyr_Helper {
 					sdkVersion = appcSDK.split('.').slice(0, 3).join('.'),
 					cliVersion = appcCLI.split('.').slice(0, 3).join('.'),
 					release = `Release ${sdkVersion}`,
-					cycleName = `Appium SDK ${sdkVersion} GA & ${cliVersion} Core Release Smoke Tests`;
+					cycleName = `Appium SDK ${sdkVersion} ${releaseType} & ${cliVersion} Core Release Smoke Tests`;
 
 				let
 					cycleId,

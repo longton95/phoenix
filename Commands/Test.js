@@ -15,6 +15,7 @@ program
 	.option('-p, --platforms <platform1,platform2>', 'List the platforms that you want to run the suite for. Defaults to \'iOS\' and \'Android\'.', 'iOS,Android')
 	.option('-l, --logging <level>', 'Set the amount of Output returned by the process, options are \'debug\' and \'basic\'. Defaults to \'basic\'.', 'basic')
 	.option('-A, --address <ip>', 'The IP address for where the Appium server is. Defaults to localhost', 'localhost')
+	.option('-r, --release <release_type>', 'The release type to use, GA or RC. Defaults to to GA', 'GA')
 	.option('-P, --port <port>', 'The port that the Appium server will run on. Defaults to 4723', 4723)
 	.option('-c, --cli <cli_version>', 'CLI version to test against. Defaults to latest', 'latest')
 	.option('-s, --sdk <sdk_version>', 'SDK version to test against. Defaults to latest', 'latest')
@@ -34,9 +35,24 @@ global.server = {
 	port: program.port
 };
 
+// Setup the logging directory for this run
+Output.setupLogDir(err => {
+	if (err) {
+		console.error(`An error occured setting up the logging directory!: ${err}`);
+		process.exit();
+	}
+});
+
 let
 	appcCLI = program.cli,
-	appcSDK = program.sdk;
+	appcSDK = program.sdk,
+	release = program.release,
+	suppReleases = [ 'GA', 'RC' ];
+
+if (!suppReleases.includes(release)) {
+	Output.error(`'${release}' is not a valid release type.`);
+	process.exit();
+}
 
 // Set the global for the hostOS to the current OS being run on
 switch (process.platform) {
@@ -48,14 +64,6 @@ switch (process.platform) {
 		global.hostOS = 'Windows';
 		break;
 }
-
-// Setup the logging directory for this run
-Output.setupLogDir(err => {
-	if (err) {
-		console.error(`An error occured setting up the logging directory!: ${err}`);
-		process.exit();
-	}
-});
 
 // TODO: Cater for new SIGINT requirements
 // If the process is killed in the console, force close all test devices
@@ -96,7 +104,7 @@ Promise.resolve()
 	// Load custom Mocha filters
 	.then(() => WebDriver.addFilters())
 	// Retreive the test cycle IDs
-	.then(() => Zephyr.getCycleId(appcSDK, appcCLI))
+	.then(() => Zephyr.getCycleId(appcSDK, appcCLI, release))
 	// Store the cycle ID for later use
 	.then(value => cycleId = value)
 	// Handle errors
