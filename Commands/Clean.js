@@ -34,9 +34,11 @@ Promise.resolve()
 function getSize() {
 	return new Promise((resolve, reject) => {
 		calcSize(projRoot, (err, size) => {
-			if (err) { reject(new Error(`exited with ${err}`)) }
+			if (err) {
+				reject(new Error(`exited with ${err}`));
+			}
 			resolve(size);
-		  });
+		});
 	});
 }
 
@@ -51,7 +53,7 @@ function getSize() {
 function getDiff(start, final) {
 	return new Promise(resolve => {
 		const diff = (start - final);
-		let removed = (diff / 1024 / 1024).toFixed(2)
+		let removed = (diff / 1024 / 1024).toFixed(2);
 
 		console.log();
 		Output.info(`Clean Finished. Removed ${removed}Mb(s) of Data`);

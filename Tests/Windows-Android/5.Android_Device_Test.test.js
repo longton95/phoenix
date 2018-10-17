@@ -4,13 +4,13 @@ const
 	Appium = require('../../Helpers/Appium_Helper.js'),
 	MochaFilter = require('mocha-filter')(global.filters);
 
-describe('Android Studio Emulator Test', () => {
+describe('Android Device Test', () => {
 	after(async () => {
-		await Appium.stopClient('emulator');
+		await Appium.stopClient('androidDevice');
 	});
 
 	before(async () => {
-		await Appium.startClient('emulator');
+		await Appium.startClient('androidDevice');
 	});
 
 	it('Click the "Hello World" Text in the App', async () => {
