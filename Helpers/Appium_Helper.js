@@ -12,7 +12,8 @@ const
 	Output = require('./Output_Helper.js'),
 	exec = require('child_process').execSync,
 	Webdriver = require('./Webdriver_Helper.js'),
-	chaiAsPromised = require('chai-as-promised');
+	chaiAsPromised = require('chai-as-promised'),
+	app = require('../Config/Test_Config.js').app;
 
 class Appium_Helper {
 	/*****************************************************************************
@@ -126,6 +127,7 @@ class Appium_Helper {
 				case 'iosDevice':
 				case 'simulator':
 					await driver.closeApp();
+					await driver.removeApp(app.packageName);
 					await driver.quit();
 					await Device.killSim();
 					break;
@@ -134,6 +136,7 @@ class Appium_Helper {
 				case 'genymotion':
 				case 'emulator':
 					await driver.closeApp();
+					await driver.removeApp(app.packageName);
 					await driver.quit();
 					await Device.quickKill();
 					break;
