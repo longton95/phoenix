@@ -174,10 +174,12 @@ class Appc_Helper {
 			const prc = spawn(cmd, args, {
 				shell: true
 			});
+
 			prc.stdout.on('data', data => {
 				Output.debug(data, 'debug');
 				fs.appendFileSync(logFile, data);
 			});
+
 			prc.stderr.on('data', data => {
 				Output.debug(data, 'debug');
 				fs.appendFileSync(logFile, data);
@@ -187,6 +189,7 @@ class Appc_Helper {
 					error = true;
 				}
 			});
+
 			prc.on('exit', code => {
 				(code !== 0 || error === true) ? reject('Failed on appc new') : Output.finish(resolve, null);
 			});
@@ -406,6 +409,7 @@ class Appc_Helper {
 			if (global.platformOS === 'iOS') {
 				if (target === 'appstore') {
 					target = 'distribution';
+					purgeSoasta();
 				} else {
 					storeBuild = false;
 					args.push('--output-dir', distPath);
@@ -621,6 +625,23 @@ class Appc_Helper {
 
 		return path.join(global.projRoot, 'Build', `${global.hostOS}-${global.platformOS}`, type, file);
 	}
+}
+
+/*******************************************************************************
+ * Remove references to SOASTA for iOS from the tiapp.xml to avoid conflicts in
+ * Apples App Store Connect.
+ ******************************************************************************/
+function purgeSoasta() {
+	let
+		appPath = Appc_Helper.genRootPath('App'),
+		filePath = path.join(appPath, 'tiapp.xml'),
+		tiapp = require('tiapp.xml').load(filePath);
+	// Remove SOASTA module reference
+	tiapp.removeModule('com.soasta.touchtest', 'iphone');
+	// Remove SOASTA property refrence
+	tiapp.removeProperty('com-soasta-touchtest-ios-appId');
+
+	tiapp.write();
 }
 
 /*******************************************************************************
