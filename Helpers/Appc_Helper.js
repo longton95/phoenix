@@ -30,23 +30,21 @@ class Appc_Helper {
 	 * Take the passed SDK, and attempt to install it. If it is a straight defined
 	 * SDK, then install it. Otherwise if it is a branch, get the latest version
 	 * of it
-	 *
-	 * @param {String} requestedSDK - The SDK version desired for testing
 	 ****************************************************************************/
-	static installSDK(requestedSDK) {
+	static installSDK() {
 		return new Promise((resolve, reject) => {
 			let
 				sdk,
 				cmd = 'appc',
-				args = [ 'ti', 'sdk', 'install', '-b', requestedSDK, '-d', '--no-prompt', '--username', appc.username, '--password', appc.password, '-O', appc.org ],
+				args = [ 'ti', 'sdk', 'install', '-b', global.appcSDK, '-d', '--no-prompt', '--username', appc.username, '--password', appc.password, '-O', appc.org ],
 				error = false;
 
 			let
 				foundStr,
 				installStr = /Titanium SDK \w+\.\w+\.\w+\.\w+ successfully installed!/;
 
-			if ((requestedSDK.split('.')).length > 1) {
-				Output.info(`Installing Titanium SDK '${requestedSDK}'... `);
+			if ((global.appcSDK.split('.')).length > 1) {
+				Output.info(`Installing Titanium SDK '${global.appcSDK}'... `);
 
 				foundStr = /Titanium SDK \w+\.\w+\.\w+\.\w+ is already installed!/;
 
@@ -55,7 +53,7 @@ class Appc_Helper {
 
 				args.splice(index, 1);
 			} else {
-				Output.info(`Installing Titanium SDK From '${requestedSDK}'... `);
+				Output.info(`Installing Titanium SDK From '${global.appcSDK}'... `);
 
 				foundStr = /You're up-to-date\. Version \w+\.\w+\.\w+\.\w+ is currently the newest version available\./;
 			}
@@ -95,17 +93,15 @@ class Appc_Helper {
 
 	/*****************************************************************************
 	 * Install the latest version of the required CLI version for testing
-	 *
-	 * @param {String} version - The CLI version being tested
 	 ****************************************************************************/
-	static async installCLI(version) {
-		Output.info(`Installing CLI Version '${version}'... `);
+	static async installCLI() {
+		Output.info(`Installing CLI Version '${global.appcCLI}'... `);
 		try {
-			exec(`appc use ${version}`, {
+			exec(`appc use ${global.appcCLI}`, {
 				stdio: [ 0 ]
 			});
 		} catch (err) {
-			if (err.toString().includes(`The version specified ${version} was not found`)) {
+			if (err.toString().includes(`The version specified ${global.appcCLI} was not found`)) {
 				// Go to the pre-production environment
 				Output.log('Logging Out of the Appc CLI');
 				exec('appc logout');
@@ -117,14 +113,14 @@ class Appc_Helper {
 				exec(`APPC_ENV=preproduction appc login --no-prompt --username ${appc.username} --password ${appc.password}`);
 
 				// Check if the CLI version we want to use is installed
-				Output.log(`Checking if the Latest Version of ${version} is Installed`);
+				Output.log(`Checking if the Latest Version of ${global.appcCLI} is Installed`);
 				const
 					clis = JSON.parse(exec('appc use -o json --prerelease')),
-					latest = clis.versions.find(element => element.includes(version)),
+					latest = clis.versions.find(element => element.includes(global.appcCLI)),
 					installed = clis.installed.includes(latest);
 
 				if (!latest) {
-					throw (new Error(`No Version Found For CLI ${version}`));
+					throw (new Error(`No Version Found For CLI ${global.appcCLI}`));
 				}
 
 				// If not, install it and set it as default
@@ -244,14 +240,35 @@ class Appc_Helper {
 	static checkGeneratedApp() {
 		const
 			rootPath = this.genRootPath('App'),
-			logPath = path.join(rootPath, '..', 'appc_new.log');
+			logPath = path.join(rootPath, '..', 'appc_new.log'),
+			filePath = path.join(rootPath, 'tiapp.xml');
+
+		let error = false;
 
 		if (fs.existsSync(logPath)) {
-			let data = fs.readFileSync(logPath, 'utf-8');
+			let data = fs.readFileSync(logPath, 'utf-8'),
+				tiapp = require('tiapp.xml').load(filePath);
+			// Checks if Tiapp and specified SDK matches
+			if (tiapp.sdkVersion !== global.appcSDK) {
+				error = true;
+				Output.error('SDK specified and SDK in Tiapp.xml do not match');
+			}
+			let modules = tiapp.getModules();
+			// TODO: Add windows wantedModules.
+			var wantedModules = [ 'com.appcelerator.apm', 'ti.cloud', 'com.soasta.touchtest', 'hyperloop' ];
+			// Iterate through a list of modules from the tiapp.xml
+			const missingModules = modules.filter(moduleName => !wantedModules.includes(moduleName.id));
+
+			if (missingModules.length !== 0) {
+				error = true;
+				Output.error(`Modules missing ${JSON.stringify(missingModules)}`);
+			}
 
 			const generated = data.includes('Project created successfully in') && data.includes('*** new completed. ***');
 
-			return generated;
+			if (generated && !error) {
+				return true;
+			}
 		} else {
 			return false;
 		}
