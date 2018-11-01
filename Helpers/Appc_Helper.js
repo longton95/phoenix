@@ -27,6 +27,34 @@ const
 
 class Appc_Helper {
 	/*****************************************************************************
+	 * Login to the Appcelerator CLI using the login command.
+	 *
+	 * @param {String} env - The Appcelerator environment to login to.
+	 ****************************************************************************/
+	static async login(env) {
+		Output.info('Logging into the Appcelerator CLI... ');
+
+		if (!env) {
+			env = 'production';
+		}
+
+		Output.log('Logging Out of the Appcelerator CLI');
+		await exec('appc logout');
+
+		Output.log(`Setting Appcelerator Environment to ${env}`);
+		await exec(`appc config set defaultEnvironment ${env}`);
+
+		Output.log('Logging Into the Appcelerator CLI');
+		let loginReturn = await exec(`appc login --username ${appc.username} --password ${appc.password} -O ${appc.org} --no-prompt`).toString();
+
+		if (loginReturn.includes('Login required to continue') || loginReturn.includes('Invalid username or password')) {
+			throw Error('Error During Appc CLI Login');
+		} else {
+			Output.finish();
+		}
+	}
+
+	/*****************************************************************************
 	 * Take the passed SDK, and attempt to install it. If it is a straight defined
 	 * SDK, then install it. Otherwise if it is a branch, get the latest version
 	 * of it
@@ -107,14 +135,7 @@ class Appc_Helper {
 		} catch (err) {
 			if (err.toString().includes(`The version specified ${version} was not found`)) {
 				// Go to the pre-production environment
-				Output.log('Logging Out of the Appc CLI');
-				exec('appc logout');
-
-				Output.log('Setting Environment to PreProduction');
-				exec('appc config set defaultEnvironment preproduction');
-
-				Output.log('Logging In');
-				exec(`APPC_ENV=preproduction appc login --no-prompt --username ${appc.username} --password ${appc.password}`);
+				await this.login('preproduction');
 
 				// Check if the CLI version we want to use is installed
 				Output.log(`Checking if the Latest Version of ${version} is Installed`);
@@ -137,14 +158,7 @@ class Appc_Helper {
 				exec(`appc use ${latest}`);
 
 				// Return to the production environment
-				Output.log('Logging Out of the Appc CLI');
-				exec('appc logout');
-
-				Output.log('Setting Environment to Production');
-				exec('appc config set defaultEnvironment production');
-
-				Output.log('Logging In');
-				exec(`APPC_ENV=production appc login --no-prompt --username ${appc.username} --password ${appc.password}`);
+				await this.login('production');
 			}
 		}
 
@@ -169,7 +183,7 @@ class Appc_Helper {
 			let
 				cmd = 'appc',
 				error = false,
-				args = [ 'new', '-n', app.name, '--id', app.packageName, '-t', 'app', '-d', rootPath, '-q', '--no-banner', '--no-prompt', '--username', appc.username, '--password', appc.password, '-O', appc.org ];
+				args = [ 'new', '-n', app.name, '--id', app.packageName, '-t', 'app', '-d', rootPath, '-q', '--no-banner', '--no-prompt', '-f', '--username', appc.username, '--password', appc.password, '-O', appc.org ];
 
 			const prc = spawn(cmd, args, {
 				shell: true
@@ -496,7 +510,7 @@ class Appc_Helper {
 
 			let
 				cmd = 'appc',
-				args = [ 'run', '--build-only', '--platform', global.platformOS.toLowerCase(), '-d', rootPath, '-f', '--no-prompt' ];
+				args = [ 'run', '--build-only', '--platform', global.platformOS.toLowerCase(), '-d', rootPath, '-f', '--no-prompt', '--username', appc.username, '--password', appc.password, '-O', appc.org ];
 
 			const prc = spawn(cmd, args, {
 				shell: true

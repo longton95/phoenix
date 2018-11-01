@@ -93,6 +93,8 @@ program.platforms.split(',').forEach(platform => {
 Promise.resolve()
 	// Log that the suite is starting up
 	.then(() => Output.banner('Starting and Configuring Suite Services'))
+	// Login and auth with the Appc CLI
+	.then(() => Appc.login('production'))
 	// Install the required CLI version
 	.then(() => Appc.installCLI(appcCLI))
 	// Install the required SDK version
