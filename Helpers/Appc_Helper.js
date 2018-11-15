@@ -255,13 +255,21 @@ class Appc_Helper {
 			}
 			let modules = tiapp.getModules();
 			// TODO: Add windows wantedModules.
-			var wantedModules = [ 'com.appcelerator.apm', 'ti.cloud', 'com.soasta.touchtest', 'hyperloop' ];
-			// Iterate through a list of modules from the tiapp.xml
-			const missingModules = modules.filter(moduleName => !wantedModules.includes(moduleName.id));
+			const wantedModules = [
+				{ id: 'com.soasta.touchtest', platform: 'iphone' },
+				{ id: 'com.soasta.touchtest', platform: 'android' },
+				{ id: 'ti.cloud', platform: 'commonjs' },
+				{ id: 'com.appcelerator.apm', platform: 'android' },
+				{ id: 'com.appcelerator.apm', platform: 'iphone' },
+				{ id: 'hyperloop', platform: 'iphone' },
+				{ id: 'hyperloop', platform: 'android' }
+			];
 
-			if (missingModules.length !== 0) {
+			try {
+				require('chai').expect(modules).to.have.deep.members(wantedModules);
+			} catch (expected) {
 				error = true;
-				Output.error(`Modules missing ${JSON.stringify(missingModules)}`);
+				Output.error(expected);
 			}
 
 			const generated = data.includes('Project created successfully in') && data.includes('*** new completed. ***');
