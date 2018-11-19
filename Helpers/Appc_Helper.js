@@ -280,7 +280,7 @@ class Appc_Helper {
 			];
 
 			try {
-				require('chai').expect(modules).to.have.deep.members(wantedModules);
+				require('chai').expect(wantedModules).to.have.deep.members(modules);
 			} catch (expected) {
 				error = true;
 				Output.error(expected);
