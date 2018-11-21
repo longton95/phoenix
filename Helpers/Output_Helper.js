@@ -52,8 +52,8 @@ class Output_Helper {
 	 * @param {String} message - A string to be output after the info tag
 	 ****************************************************************************/
 	static info(message) {
-		appendLog('basic', `[INFO] ${sanatise(message)}`, true);
-		appendLog('debug', `[INFO] ${sanatise(message)}\n`, true);
+		appendLog('basic', `[INFO] ${sanitise(message)}`, true);
+		appendLog('debug', `[INFO] ${sanitise(message)}\n`, true);
 		if (!global.testing) {
 			if (global.logging === 'basic') {
 				process.stdout.write(`${Green}[INFO]${Reset} ${message}`);
@@ -69,8 +69,8 @@ class Output_Helper {
 	 * @param {String} message - String to be output
 	 ****************************************************************************/
 	static error(message) {
-		appendLog('basic', `\n[ERROR] ${sanatise(message)}\n`, true);
-		appendLog('debug', `[ERROR] ${sanatise(message)}\n`, true);
+		appendLog('basic', `\n[ERROR] ${sanitise(message)}\n`, true);
+		appendLog('debug', `[ERROR] ${sanitise(message)}\n`, true);
 		if (!global.testing) {
 			if (global.logging === 'basic') {
 				process.stdout.write(`\n${Red}[ERROR] ${message}${Reset}\n`);
@@ -100,7 +100,7 @@ class Output_Helper {
 	 * @param {String} message - String to be output
 	 ****************************************************************************/
 	static debug(message, type) {
-		appendLog(type, `[DEBUG] ${sanatise(message)}`, true);
+		appendLog(type, `[DEBUG] ${sanitise(message)}`, true);
 		if (!global.testing && global.logging === 'debug') {
 			process.stdout.write(`${Grey}[DEBUG] ${message}${Reset}`);
 		}
@@ -112,7 +112,7 @@ class Output_Helper {
 	 * @param {String} message - String to be output
 	 ****************************************************************************/
 	static log(message) {
-		appendLog('all', `[LOG] ${sanatise(message)}\n`, true);
+		appendLog('all', `[LOG] ${sanitise(message)}\n`, true);
 	}
 
 	/*****************************************************************************
@@ -262,7 +262,7 @@ function appendLog(type, message, time) {
 	}
 }
 
-function sanatise(message) {
+function sanitise(message) {
 	if (message instanceof Object) {
 		if (message instanceof Buffer) {
 			return message.toString('utf8');
