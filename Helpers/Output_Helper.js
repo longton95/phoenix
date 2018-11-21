@@ -52,8 +52,8 @@ class Output_Helper {
 	 * @param {String} message - A string to be output after the info tag
 	 ****************************************************************************/
 	static info(message) {
-		appendLog('basic', message, true, 'info');
-		appendLog('debug', message, true, 'info');
+		appendLog('basic', `[INFO] ${sanatise(message)}`, true);
+		appendLog('debug', `[INFO] ${sanatise(message)}\n`, true);
 		if (!global.testing) {
 			if (global.logging === 'basic') {
 				process.stdout.write(`${Green}[INFO]${Reset} ${message}`);
@@ -69,8 +69,8 @@ class Output_Helper {
 	 * @param {String} message - String to be output
 	 ****************************************************************************/
 	static error(message) {
-		appendLog('basic', message, true, 'error');
-		appendLog('debug', message, true, 'error');
+		appendLog('basic', `\n[ERROR] ${sanatise(message)}\n`, true);
+		appendLog('debug', `[ERROR] ${sanatise(message)}\n`, true);
 		if (!global.testing) {
 			if (global.logging === 'basic') {
 				process.stdout.write(`\n${Red}[ERROR] ${message}${Reset}\n`);
@@ -100,7 +100,7 @@ class Output_Helper {
 	 * @param {String} message - String to be output
 	 ****************************************************************************/
 	static debug(message, type) {
-		appendLog(type, message, true, 'debug');
+		appendLog(type, `[DEBUG] ${sanatise(message)}`, true);
 		if (!global.testing && global.logging === 'debug') {
 			process.stdout.write(`${Grey}[DEBUG] ${message}${Reset}`);
 		}
@@ -112,7 +112,7 @@ class Output_Helper {
 	 * @param {String} message - String to be output
 	 ****************************************************************************/
 	static log(message) {
-		appendLog('all', message, true, 'log');
+		appendLog('all', `[LOG] ${sanatise(message)}\n`, true);
 	}
 
 	/*****************************************************************************
@@ -230,39 +230,11 @@ function generateTimestamp(now, full) {
  * @param {String} message - The string to write to the relevant log file
  * @param {Boolean} time - A bool value for whether a timestamp should be added
  ******************************************************************************/
-function appendLog(type, message, time, level) {
+function appendLog(type, message, time) {
 	if (global.logFiles) {
 		const
 			logBasicFile = path.join(global.projRoot, 'Logs', global.timestamp, 'basic.log'),
 			logDebugFile = path.join(global.projRoot, 'Logs', global.timestamp, 'debug.log');
-
-		if (message instanceof Object) {
-			if (message instanceof Buffer) {
-				message = message.toString('utf8')
-			} else {
-				message = JSON.stringify(message, null, 2);
-			}
-		}
-		switch (level) {
-			case 'error':
-				message = '[ERROR]' + message + '\n';
-				break;
-
-			case 'log':
-				message = '[LOG]' + message + '\n';
-				break;
-
-			case 'info':
-				message = '[INFO]' + message + '\n';
-				break;
-
-			case 'debug':
-				message = '[DEBUG]' + message + '\n';
-				
-			default:
-				message + '\n';
-
-		}
 
 		if (time) {
 			message = `[${generateTimestamp(new Date(), false)}]` + message;
@@ -287,6 +259,18 @@ function appendLog(type, message, time, level) {
 		} catch (err) {
 			// Do Nothing
 		}
+	}
+}
+
+function sanatise(message) {
+	if (message instanceof Object) {
+		if (message instanceof Buffer) {
+			return message.toString('utf8');
+		} else {
+			return JSON.stringify(message, null, 2);
+		}
+	} else {
+		return message;
 	}
 }
 
