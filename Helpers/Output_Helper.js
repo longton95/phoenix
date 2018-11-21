@@ -52,8 +52,8 @@ class Output_Helper {
 	 * @param {String} message - A string to be output after the info tag
 	 ****************************************************************************/
 	static info(message) {
-		appendLog('basic', `[INFO] ${message}`, true);
-		appendLog('debug', `[INFO] ${message}\n`, true);
+		appendLog('basic', `[INFO] ${sanatise(message)}`, true);
+		appendLog('debug', `[INFO] ${sanatise(message)}\n`, true);
 		if (!global.testing) {
 			if (global.logging === 'basic') {
 				process.stdout.write(`${Green}[INFO]${Reset} ${message}`);
@@ -69,8 +69,8 @@ class Output_Helper {
 	 * @param {String} message - String to be output
 	 ****************************************************************************/
 	static error(message) {
-		appendLog('basic', `\n[ERROR] ${message}\n`, true);
-		appendLog('debug', `[ERROR] ${message}\n`, true);
+		appendLog('basic', `\n[ERROR] ${sanatise(message)}\n`, true);
+		appendLog('debug', `[ERROR] ${sanatise(message)}\n`, true);
 		if (!global.testing) {
 			if (global.logging === 'basic') {
 				process.stdout.write(`\n${Red}[ERROR] ${message}${Reset}\n`);
@@ -100,7 +100,7 @@ class Output_Helper {
 	 * @param {String} message - String to be output
 	 ****************************************************************************/
 	static debug(message, type) {
-		appendLog(type, `[DEBUG] ${message}`, true);
+		appendLog(type, `[DEBUG] ${sanatise(message)}`, true);
 		if (!global.testing && global.logging === 'debug') {
 			process.stdout.write(`${Grey}[DEBUG] ${message}${Reset}`);
 		}
@@ -112,7 +112,7 @@ class Output_Helper {
 	 * @param {String} message - String to be output
 	 ****************************************************************************/
 	static log(message) {
-		appendLog('all', `[LOG] ${message}\n`, true);
+		appendLog('all', `[LOG] ${sanatise(message)}\n`, true);
 	}
 
 	/*****************************************************************************
@@ -237,7 +237,7 @@ function appendLog(type, message, time) {
 			logDebugFile = path.join(global.projRoot, 'Logs', global.timestamp, 'debug.log');
 
 		if (time) {
-			message = `[${generateTimestamp(new Date(), false)}] ${message}`;
+			message = `[${generateTimestamp(new Date(), false)}]` + message;
 		}
 
 		try {
@@ -259,6 +259,18 @@ function appendLog(type, message, time) {
 		} catch (err) {
 			// Do Nothing
 		}
+	}
+}
+
+function sanatise(message) {
+	if (message instanceof Object) {
+		if (message instanceof Buffer) {
+			return message.toString('utf8');
+		} else {
+			return JSON.stringify(message, null, 2);
+		}
+	} else {
+		return message;
 	}
 }
 

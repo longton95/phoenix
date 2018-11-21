@@ -34,6 +34,8 @@ global.server = {
 	host: program.address,
 	port: program.port
 };
+global.appcCLI = program.cli;
+global.appcSDK = program.sdk;
 
 // Setup the logging directory for this run
 Output.setupLogDir(err => {
@@ -44,8 +46,6 @@ Output.setupLogDir(err => {
 });
 
 let
-	appcCLI = program.cli,
-	appcSDK = program.sdk,
 	release = program.release,
 	suppReleases = [ 'GA', 'RC' ];
 
@@ -96,17 +96,17 @@ Promise.resolve()
 	// Login and auth with the Appc CLI
 	.then(() => Appc.login('production'))
 	// Install the required CLI version
-	.then(() => Appc.installCLI(appcCLI))
+	.then(() => Appc.installCLI())
 	// Install the required SDK version
-	.then(() => Appc.installSDK(appcSDK))
+	.then(() => Appc.installSDK())
 	// Retrieve the installed version
-	.then(value => appcSDK = value)
+	.then(value => global.appcSDK = value)
 	// Start an Appium server
 	.then(() => Appium.runAppium())
 	// Load custom Mocha filters
 	.then(() => WebDriver.addFilters())
 	// Retreive the test cycle IDs
-	.then(() => Zephyr.getCycleId(appcSDK, appcCLI, release))
+	.then(() => Zephyr.getCycleId(global.appcSDK, global.appcCLI, release))
 	// Store the cycle ID for later use
 	.then(value => cycleId = value)
 	// Handle errors
