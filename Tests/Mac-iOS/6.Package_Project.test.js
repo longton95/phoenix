@@ -2,28 +2,14 @@
 
 const
 	path = require('path'),
-	tiapp = require('tiapp.xml'),
+	assert = require('assert'),
+	exec = require('child_process').execSync,
 	Appc = require('../../Helpers/Appc_Helper.js'),
-	Appium = require('../../Helpers/Appium_Helper.js'),
 	MochaFilter = require('mocha-filter')(global.filters);
 
 describe('Package App (App Store)', () => {
-	before('Change the Release Version of the Application Tiapp', () => {
-		const
-			rootPath = Appc.genRootPath('App'),
-			tiappFile = path.join(rootPath, 'tiapp.xml');
-
-		const file = tiapp.load(tiappFile);
-
-		const currDate = Date.now().valueOf();
-
-		file.version = currDate;
-
-		file.write();
-	});
-
-	after('Stop the Appium Session', async () => {
-		await Appium.stopClient('Mac');
+	after('Kill the Xcode process', async () => {
+		exec('pkill Xcode');
 	});
 
 	it('Package the Application', async () => {
@@ -34,34 +20,21 @@ describe('Package App (App Store)', () => {
 		this.timeout(420000);
 		this.slow(400000);
 
-		await Appium.startClient('Mac');
+		const script = path.join(global.projRoot, 'Tests', 'Mac-iOS', 'OSAScript', 'Upload_App.scpt');
 
-		await global.driver
-			.elementByXPath('/AXApplication[@AXTitle=\'Xcode\']/AXWindow[@AXIdentifier=\'_NS:51\']/AXSplitGroup[@AXIdentifier=\'_NS:231\']/AXScrollArea[@AXIdentifier=\'_NS:158\']/AXButton[@AXIdentifier=\'_NS:19\']')
-			.click()
-			.elementByXPath('/AXApplication[@AXTitle=\'Xcode\']/AXWindow[@AXIdentifier=\'_NS:51\']/AXSheet[@AXIdentifier=\'_NS:63\']/AXScrollArea[@AXIdentifier=\'_NS:74\']/AXTable[@AXIdentifier=\'_NS:48\']/AXRow[@AXSubrole=\'AXTableRow\']/AXCell[0]/AXRadioButton[@AXIdentifier=\'_NS:13\']')
-			.click()
-			.elementByXPath('/AXApplication[@AXTitle=\'Xcode\']/AXWindow[@AXIdentifier=\'_NS:51\']/AXSheet[@AXIdentifier=\'_NS:63\']/AXButton[@AXIdentifier=\'_NS:127\']')
-			.click()
-			.elementByXPath('/AXApplication[@AXTitle=\'Xcode\']/AXWindow[@AXIdentifier=\'_NS:51\']/AXSheet[@AXIdentifier=\'_NS:63\']/AXRadioButton[@AXIdentifier=\'_NS:45\']')
-			.click()
-			.elementByXPath('/AXApplication[@AXTitle=\'Xcode\']/AXWindow[@AXIdentifier=\'_NS:51\']/AXSheet[@AXIdentifier=\'_NS:63\']/AXButton[@AXIdentifier=\'_NS:127\']')
-			.click()
-			.sleep(10000)
-			.elementByXPath('/AXApplication[@AXTitle=\'Xcode\']/AXWindow[@AXIdentifier=\'_NS:51\']/AXSheet[@AXIdentifier=\'_NS:63\']/AXButton[@AXIdentifier=\'_NS:127\']')
-			.click()
-			.sleep(10000)
-			.elementByXPath('/AXApplication[@AXTitle=\'Xcode\']/AXWindow[@AXIdentifier=\'_NS:51\']/AXSheet[@AXIdentifier=\'_NS:63\']/AXScrollArea[@AXIdentifier=\'_NS:95\']/AXPopUpButton[@AXIdentifier=\'_NS:85\']')
-			.click()
-			.elementByXPath('/AXApplication[@AXTitle=\'Xcode\']/AXWindow[@AXIdentifier=\'_NS:51\']/AXSheet[@AXIdentifier=\'_NS:63\']/AXScrollArea[@AXIdentifier=\'_NS:95\']/AXPopUpButton[@AXIdentifier=\'_NS:85\']/AXMenu[0]/AXMenuItem[@AXTitle=\'AppiumTest\']')
-			.click()
-			.elementByXPath('/AXApplication[@AXTitle=\'Xcode\']/AXWindow[@AXIdentifier=\'_NS:51\']/AXSheet[@AXIdentifier=\'_NS:63\']/AXButton[@AXIdentifier=\'_NS:127\']')
-			.click()
-			.sleep(10000)
-			.elementByXPath('/AXApplication[@AXTitle=\'Xcode\']/AXWindow[@AXIdentifier=\'_NS:51\']/AXSheet[@AXIdentifier=\'_NS:63\']/AXButton[@AXIdentifier=\'_NS:127\']')
-			.click()
-			.sleep(300000)
-			.elementByXPath('/AXApplication[@AXTitle=\'Xcode\']/AXWindow[@AXIdentifier=\'_NS:51\']/AXSheet[@AXIdentifier=\'_NS:63\']/AXStaticText[@AXValue=\'App "AppiumTest" successfully uploaded.\']')
-			.isDisplayed().should.become(true);
+		exec(`osascript ${script}`, {
+			stdio: [ 0 ]
+		});
+	});
+
+	it('Login to the Apple Developer Website, and Publish the application', function () {
+		this.timeout(600000);
+		this.slow(400000);
+
+		let runner = path.join(global.projRoot, 'Tests', 'Mac-iOS', 'Cypress', 'Cypress_Runner.Setup.js');
+
+		let child = exec(`node ${runner}`);
+
+		assert(child.toString().includes('All specs passed!'), true);
 	});
 });

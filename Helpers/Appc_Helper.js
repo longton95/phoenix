@@ -69,12 +69,12 @@ class Appc_Helper {
 
 			let
 				foundStr,
-				installStr = /Titanium SDK \w+\.\w+\.\w+\.\w+ successfully installed!/;
+				installStr = /successfully installed!/;
 
 			if ((global.appcSDK.split('.')).length > 1) {
 				Output.info(`Installing Titanium SDK '${global.appcSDK}'... `);
 
-				foundStr = /Titanium SDK \w+\.\w+\.\w+\.\w+ is already installed!/;
+				foundStr = /is already installed!/;
 
 				// Remove the branch flag if downloading a specific SDK
 				let index = args.indexOf(args.find(element => element === '-b'));
@@ -83,12 +83,13 @@ class Appc_Helper {
 			} else {
 				Output.info(`Installing Titanium SDK From '${global.appcSDK}'... `);
 
-				foundStr = /You're up-to-date\. Version \w+\.\w+\.\w+\.\w+ is currently the newest version available\./;
+				foundStr = /is currently the newest version available\./;
 			}
 
 			const prc = spawn(cmd, args, {
 				shell: true
 			});
+
 			prc.stdout.on('data', data => {
 				Output.debug(data, 'debug');
 				if (data.toString().match(installStr)) {
@@ -110,10 +111,14 @@ class Appc_Helper {
 				if (code !== 0 || error === true) {
 					reject('Error installing Titanium SDK');
 				} else {
-					// If the SDK was already installed, the -d flag will have been ignored
-					exec(`appc ti sdk select ${sdk}`);
+					try {
+						// If the SDK was already installed, the -d flag will have been ignored
+						exec(`appc ti sdk select ${sdk}`);
 
-					Output.finish(resolve, sdk);
+						Output.finish(resolve, sdk);
+					} catch (err) {
+						reject(err);
+					}
 				}
 			});
 		});
@@ -201,7 +206,25 @@ class Appc_Helper {
 			});
 
 			prc.on('exit', code => {
-				(code !== 0 || error === true) ? reject('Failed on appc new') : Output.finish(resolve, null);
+				if (code !== 0 || error === true) {
+					reject('Failed on appc new');
+				} else {
+					// Load in the tiapp.xml of the newly generated project
+					const
+						filePath = path.join(rootPath, 'tiapp.xml'),
+						tiapp = require('tiapp.xml').load(filePath);
+					// Generate a 3 point version of the SDK being used
+					let sdk = tiapp.sdkVersion.split('.').slice(0, 3).join('.');
+					// Rearrange our generated timestamp for this run
+					let
+						tmArr = global.timestamp.split(/[-,_,꞉]+/),
+						time = `${tmArr[2].slice(-2)}${tmArr[0]}${tmArr[1]}${tmArr[3]}${tmArr[4]}`;
+					// Write this value to the tiapp again to ensure accuracy
+					tiapp.version = `${sdk}.${time}`;
+					tiapp.write();
+
+					Output.finish(resolve, null);
+				}
 			});
 		});
 	}
@@ -327,7 +350,8 @@ class Appc_Helper {
 		return new Promise(async (resolve, reject) => {
 			Output.info('Building Application... ');
 
-			let error = false,
+			let
+				error = false,
 				rootPath = this.genRootPath('App');
 
 			let
@@ -436,7 +460,8 @@ class Appc_Helper {
 		return new Promise(async (resolve, reject) => {
 			Output.info('Building Application... ');
 
-			let error = false,
+			let
+				error = false,
 				storeBuild = true,
 				appPath = this.genRootPath('App'),
 				distPath = this.genRootPath('Package');
@@ -462,17 +487,22 @@ class Appc_Helper {
 
 				for (const profile of profiles[target]) {
 					if (!profile.expired) {
-						if (storeBuild && profile.name === 'AppiumTest') {
+						if (storeBuild && profile.name === app.name) {
 							uuid = profile.uuid;
 							distName = `"${profile.teamName} (${profile.teamId})"`;
 							break;
-						} else if (!storeBuild) {
+						} else if (!storeBuild && profile.name === 'Any App Adhoc Distribution') {
 							uuid = profile.uuid;
 							distName = `"${profile.teamName} (${profile.teamId})"`;
+							break;
 						}
 					} else {
 						Output.warn(`The Profile "${profile.name}" has expired`);
 					}
+				}
+
+				if (!uuid) {
+					reject(Error('No valid provisioning profile found'));
 				}
 
 				args.push(
@@ -675,9 +705,10 @@ function purgeSoasta() {
 		appPath = Appc_Helper.genRootPath('App'),
 		filePath = path.join(appPath, 'tiapp.xml'),
 		tiapp = require('tiapp.xml').load(filePath);
+
 	// Remove SOASTA module reference
 	tiapp.removeModule('com.soasta.touchtest', 'iphone');
-	// Remove SOASTA property refrence
+	// Remove SOASTA property reference
 	tiapp.removeProperty('com-soasta-touchtest-ios-appId');
 
 	tiapp.write();

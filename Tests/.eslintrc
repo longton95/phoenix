@@ -4,8 +4,12 @@
       "beforeEach",
       "afterEach",
       "describe",
+      "Cypress",
+      "context",
+      "expect",
       "before",
       "after",
+      "cy",
       "it"
     },
     "rules": {

@@ -17,7 +17,7 @@ exports.appc = {
 };
 
 exports.keystore = {
-	name: 'AppiumTestKeystore',
-	alias: 'AppiumTest',
+	name: 'AppiumSmokeKeystore',
+	alias: 'AppiumSmoke',
 	password: 'Monkeylord'
 };

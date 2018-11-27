@@ -19,16 +19,16 @@ exports.androidDevice = {
 	platVersion: '8.0',
 	deviceName: 'Nexus 5X',
 	deviceId: process.env.ANDROIDID,
-	appPackage: 'com.appc.appiumtest',
-	appActivity: '.AppiumtestActivity'
+	appPackage: 'com.appc.appiumsmoke',
+	appActivity: '.AppiumsmokeActivity'
 };
 
 exports.emulator = {
 	deviceName: 'android-23-x86',
 	platVersion: '6.0',
 	platform: 'Android',
-	appPackage: 'com.appc.appiumtest',
-	appActivity: '.AppiumtestActivity',
+	appPackage: 'com.appc.appiumsmoke',
+	appActivity: '.AppiumsmokeActivity',
 	apiLevel: '28'
 };
 
@@ -36,18 +36,18 @@ exports.genymotion = {
 	deviceName: 'Samsung Galaxy S8 - 8.0 - API 26 - 1440x2960',
 	platVersion: '8.0',
 	platform: 'Android',
-	appPackage: 'com.appium.appiumtest',
-	appActivity: '.AppiumtestActivity'
+	appPackage: 'com.appium.appiumsmoke',
+	appActivity: '.AppiumsmokeActivity'
 };
 
 exports.app = {
-	name: 'AppiumTest',
-	packageName: 'com.appc.appiumtest'
+	name: 'AppiumSmoke',
+	packageName: 'com.appc.appiumsmoke'
 };
 
 exports.mod = {
-	name: 'appiumtestmodule',
-	packageName: 'com.appc.appiumtestmodule',
+	name: 'appiumsmokemodule',
+	packageName: 'com.appc.appiumsmokemodule',
 	version: '1.0',
 	author: 'appc',
 	copyright: 'Copyright Appcelerator',
