@@ -2,7 +2,8 @@
 
 const
 	path = require('path'),
-	fs = require('fs-extra');
+	fs = require('fs-extra'),
+	moment = require('moment-timezone');
 
 // Colours to be used in the console logging
 const
@@ -148,7 +149,7 @@ class Output_Helper {
 			global.projRoot = '.';
 		}
 		// Generate a timestamp to be used on the current run
-		global.timestamp = generateTimestamp(new Date(), true);
+		global.timestamp = moment();
 
 		// Allows us to know whether or not we should be logging to the files
 		global.logFiles = true;
@@ -158,7 +159,7 @@ class Output_Helper {
 			logRoot = path.join(global.projRoot, 'Logs'),
 			repRoot = path.join(global.projRoot, 'Reports'),
 
-			logPath = path.join(logRoot, global.timestamp),
+			logPath = path.join(logRoot, global.timestamp.format('DD-MM-YYYY_HH꞉mm꞉ss')),
 			screenshots = path.join(logPath, 'Screen_Shots'),
 
 			logBasicFile = path.join(logPath, 'basic.log'),
@@ -191,38 +192,6 @@ class Output_Helper {
 }
 
 /*******************************************************************************
- * Generates a timestamp for use in logging and screenshots
- *
- * @param {Object} now - The time at which the function was called
- * @param {Boolean} full - The full date and time, or just time
- ******************************************************************************/
-function generateTimestamp(now, full) {
-	const
-		timeOptions = {
-			hour12: false, // Rule Britannia
-			hour: 'numeric',
-			minute: 'numeric',
-			second: 'numeric'
-		},
-		dateOptions = {
-			day: 'numeric',
-			year: 'numeric',
-			month: 'numeric'
-		};
-
-	let
-		date = now.toLocaleDateString('en-gb', dateOptions).replace(/\//g, '-'),
-		time = now.toLocaleTimeString('en-gb', timeOptions).replace(/:/g, '꞉'); // Replaces colons with a unicode character, colons aren't valid in filenames on Windows
-
-	if (full) {
-		return (`${date}_${time}`);
-	}
-	if (!full) {
-		return (time);
-	}
-}
-
-/*******************************************************************************
  * Write a message into one or both logs depending on the type of message that
  * needs to be written.
  *
@@ -233,11 +202,12 @@ function generateTimestamp(now, full) {
 function appendLog(type, message, time) {
 	if (global.logFiles) {
 		const
-			logBasicFile = path.join(global.projRoot, 'Logs', global.timestamp, 'basic.log'),
-			logDebugFile = path.join(global.projRoot, 'Logs', global.timestamp, 'debug.log');
+			logBasicFile = path.join(global.projRoot, 'Logs', global.timestamp.format('DD-MM-YYYY_HH꞉mm꞉ss'), 'basic.log'),
+			logDebugFile = path.join(global.projRoot, 'Logs', global.timestamp.format('DD-MM-YYYY_HH꞉mm꞉ss'), 'debug.log');
 
 		if (time) {
-			message = `[${generateTimestamp(new Date(), false)}]` + message;
+			const currTime = moment().format('HH꞉mm');
+			message = `[${currTime}] ${message}`;
 		}
 
 		try {

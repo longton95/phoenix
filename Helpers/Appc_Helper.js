@@ -215,10 +215,8 @@ class Appc_Helper {
 						tiapp = require('tiapp.xml').load(filePath);
 					// Generate a 3 point version of the SDK being used
 					let sdk = tiapp.sdkVersion.split('.').slice(0, 3).join('.');
-					// Rearrange our generated timestamp for this run
-					let
-						tmArr = global.timestamp.split(/[-,_,꞉]+/),
-						time = `${tmArr[2].slice(-2)}${tmArr[0]}${tmArr[1]}${tmArr[3]}${tmArr[4]}`;
+					// Format our moment timestamp to generate a build number, locking timezone to prevent builds in different regions conflicting
+					let time = global.timestamp.tz('Europe/Dublin').format('YYMMDDHHmm');
 					// Write this value to the tiapp again to ensure accuracy
 					tiapp.version = `${sdk}.${time}`;
 					tiapp.write();

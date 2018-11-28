@@ -23,17 +23,17 @@ class WebDriver_Helper {
 
 							switch (platform) {
 								case 'iOS':
-									// Get the size of the window frame
+								// Get the size of the window frame
 									driver
 										.elementByClassName('XCUIElementTypeApplication')
 										.getSize()
 										.then(windowSize => {
-											// Get the size of the status bar
+										// Get the size of the status bar
 											driver
 												.elementByClassName('XCUIElementTypeStatusBar')
 												.getSize()
 												.then(statusSize => {
-													// Create the config for PNGCrop to use
+												// Create the config for PNGCrop to use
 													let dimensions = {
 														height: (windowSize.height * 2),
 														width: (windowSize.width * 2),
@@ -56,22 +56,22 @@ class WebDriver_Helper {
 										.elementsById('android:id/statusBarBackground')
 										.then(elements => {
 											if (elements.length > 0) {
-												// Get the size of the window frame
+											// Get the size of the window frame
 												driver
 													.elementByXPath('//android.widget.FrameLayout[@instance="0"]')
 													.getSize()
 													.then(frameSize => {
-														// Get the size of the navigation bar
+													// Get the size of the navigation bar
 														driver
 															.elementById('android:id/navigationBarBackground')
 															.getSize()
 															.then(navSize => {
-																// Get the size of the status bar
+															// Get the size of the status bar
 																driver
 																	.elementById('android:id/statusBarBackground')
 																	.getSize()
 																	.then(statusSize => {
-																		// Create the full window height
+																	// Create the full window height
 																		const
 																			windowWidth = (frameSize.width),
 																			windowHeight = (frameSize.height - (navSize.height * 1.5));
@@ -94,7 +94,7 @@ class WebDriver_Helper {
 															});
 													});
 											} else {
-												// Take the screenshot
+											// Take the screenshot
 												driver
 													.sleep(1000)
 													.takeScreenshot()
@@ -138,7 +138,7 @@ module.exports = WebDriver_Helper;
 function processImg(ticket, screenshot, directory, thresh, dimensions) {
 	return new Promise((resolve, reject) => {
 		const
-			testPath = path.join(global.projRoot, 'Logs', global.timestamp, 'Screen_Shots'),
+			testPath = path.join(global.projRoot, 'Logs', global.timestamp.format('DD-MM-YYYY_HH꞉mm꞉ss'), 'Screen_Shots'),
 			refPath = path.join(directory, '..', 'Screen_Shots'),
 			testImg = path.join(testPath, `${ticket}_Failure.png`),
 			reference = path.join(refPath, `${ticket}.png`);
